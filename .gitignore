@@ -1,0 +1,8 @@
+*.py
+__pycache__
+build/bin/
+build/windows/*.syso
+build/windows/*.exe
+build/darwin/*.app
+frontend/dist
+frontend/node_modules

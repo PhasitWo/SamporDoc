@@ -9,7 +9,15 @@ import (
 type School struct {
 	ID      uint64 `gorm:"primaryKey;autoIncrement"`
 	Name    string `gorm:"index"`
-	Address string
+	Address *string
+}
+
+type Shop struct {
+	ID              uint64 `gorm:"primaryKey;autoIncrement"`
+	Slug            string `gorm:"uniqueIndex"`
+	Name            string
+	BillFormPath    *string
+	BillcontrolPath *string
 }
 
 type Log struct {

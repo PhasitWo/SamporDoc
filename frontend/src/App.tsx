@@ -1,18 +1,28 @@
-import { Greet } from '../wailsjs/go/main/App';
+import { Routes, Route, Outlet, useNavigate } from 'react-router';
+import { EventsOn } from '../wailsjs/runtime';
+import { CreateReceipt } from './pages/CreateReceipt';
+import { Setting } from './pages/Setting';
+
+const Layout = () => (
+  <div className="w-[100vw] h-[100vh] bg-gray-100 text-[18px]">
+    <Outlet />
+  </div>
+);
 
 function App() {
-  const action = async () => {
-    const res = await Greet('Adam');
-    alert(res);
-  };
+  const navigate = useNavigate();
+
+  EventsOn('navigate', (route: string) => {
+    navigate(route);
+  });
 
   return (
-    <div className="min-h-screen bg-white grid grid-cols-1 place-items-center justify-items-center mx-auto py-8">
-      <div className="text-blue-900 text-2xl font-bold font-mono">
-        <h1 className="content-center">Vite + React + TS + Tailwind</h1>
-      </div>
-      <button onClick={action}>Action</button>
-    </div>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<CreateReceipt />} />
+        <Route path="/setting" element={<Setting />} />
+      </Route>
+    </Routes>
   );
 }
 

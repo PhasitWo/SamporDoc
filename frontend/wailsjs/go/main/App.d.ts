@@ -5,10 +5,14 @@ import {model} from '../models';
 
 export function CreateReceipt(arg1:main.CreateReceiptParams):Promise<void>;
 
-export function GetAllSchools():Promise<Array<model.School>>;
+export function GetAllCustomers():Promise<Array<model.Customer>>;
 
 export function GetAllShops():Promise<Array<model.Shop>>;
 
 export function GetNextControlNumber(arg1:string):Promise<number>;
 
-export function UpdateShopBySlug(arg1:model.Shop):Promise<void>;
+export function OpenDirectoryDialog():Promise<string>;
+
+export function OpenExcelFileDialog():Promise<string>;
+
+export function UpdateShopBySlug(arg1:model.Shop):Promise<model.Shop>;

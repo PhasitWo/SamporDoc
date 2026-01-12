@@ -1,104 +1,184 @@
-import { Input, Button, AutoComplete, Select, Form } from 'antd';
-import { ComponentProps, useEffect, useMemo, useState } from 'react';
+import { Input, Button, AutoComplete, Select, DatePicker } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 import { model } from '../../wailsjs/go/models';
-import { GetAllShops } from '../../wailsjs/go/main/App';
+import { GetNextControlNumber } from '../../wailsjs/go/main/App';
 import type { DefaultOptionType } from 'antd/es/select';
+import { Dayjs } from 'dayjs';
+import ErrorAlertCard from '../components/ErrorAlertCard';
+import { useNavigate } from 'react-router';
+import InputContainer from '../components/InputContainer';
+import { useAppStore } from '../store/useAppStore';
+
+interface ShopOptionType extends DefaultOptionType {
+  meta: model.Shop;
+}
 
 interface FormData {
   filename: string;
-  saveDir?: string;
-  receiptNO: number;
-  receiptDate?: Date;
+  saveDir: string;
+  receiptNO: string;
+  receiptDate: Dayjs | null;
   customerName: string;
-  address?: string;
-  detail?: string;
-  deliveryNO?: number;
-  deliveryDate?: Date;
+  address: string;
+  detail: string;
+  deliveryNO: string;
+  deliveryDate: Dayjs | null;
   amount: number;
 }
 
-export function CreateReceipt() {
-  const [form] = Form.useForm();
+export default function CreateReceipt() {
+  const navigate = useNavigate();
+  // form
+  const [data, setData] = useState<FormData>({
+    filename: '',
+    saveDir: '',
+    receiptNO: '',
+    receiptDate: null,
+    customerName: '',
+    address: '',
+    detail: '',
+    deliveryNO: '',
+    deliveryDate: null,
+    amount: 0,
+  });
+
+  // shop
   const [selectedShop, setSelectedShop] = useState<model.Shop | null>(null);
-  const [shops, setShops] = useState<model.Shop[]>([]);
-  const shopOptions = useMemo<DefaultOptionType[]>(
-    () => shops.map<DefaultOptionType>((s) => ({ value: s.Slug, label: s.Name })),
+  const shops = useAppStore((s) => s.shops);
+  const shopOptions = useMemo<ShopOptionType[]>(
+    () => shops.map<ShopOptionType>((s) => ({ value: s.slug, label: s.name, meta: s })),
     [shops]
   );
 
   useEffect(() => {
     (async () => {
-      const shops = await GetAllShops();
-      setShops(shops);
+      setData({ ...data, receiptNO: '' });
+      if (selectedShop && selectedShop.receiptControlPath) {
+        const nextNumber = await GetNextControlNumber(selectedShop.receiptControlPath);
+        setData({ ...data, receiptNO: String(nextNumber) });
+      }
     })();
-  }, []);
+  }, [selectedShop]);
 
-  const handleShopChange = (slug: string) => {
-    const found = shops.find((v) => v.Slug === slug)!;
-    setSelectedShop(found);
+  // customers
+  const customers = useAppStore((s) => s.customers);
+  const customerOptions = useMemo<DefaultOptionType[]>(
+    () => customers.map<DefaultOptionType>((s) => ({ value: s.name, label: s.name })),
+    [shops]
+  );
+
+  useEffect(() => {
+    const foundAddress = customers.find((v) => v.name === data.customerName)?.address;
+    setData({ ...data, address: foundAddress ?? '' });
+  }, [data.customerName]);
+
+  const readyToCreate = useMemo<boolean>(() => {
+    if (selectedShop == null || selectedShop.receiptFormPath == undefined || selectedShop.receiptControlPath == undefined) {
+      return false;
+    }
+    if (data.amount <= 0) {
+      return false;
+    }
+    if (data.filename.trim() === '' || data.saveDir === '' || data.receiptNO.trim() === '' || data.customerName.trim() === '') {
+      return false;
+    }
+    return true;
+  }, [data, selectedShop]);
+
+  const handleShopChange = (_: any, option?: ShopOptionType | ShopOptionType[]) => {
+    if (option && !Array.isArray(option)) {
+      setSelectedShop(option.meta);
+    } else {
+      setSelectedShop(null);
+    }
   };
 
   return (
-    <Form form={form} className="mx-auto flex flex-col gap-3 items-center justify-center">
+    <div className="mx-auto flex flex-col gap-3 items-center justify-center max-w-[500px]">
       <InputContainer>
         <label>ชื่อไฟล์</label>
-        <Input />
+        <Input onChange={(e) => setData({ ...data, filename: e.target.value })} />
       </InputContainer>
       <InputContainer>
         <label>บันทึกที่</label>
         <div className="flex gap-1">
           <Input readOnly />
-          <Button type="primary">Browse</Button>
+          <Button type="default">เลือก</Button>
         </div>
+      </InputContainer>
+      <InputContainer>
+        <label>ร้าน</label>
+        <Select<string | undefined, ShopOptionType>
+          allowClear
+          options={shopOptions}
+          onChange={handleShopChange}
+          value={selectedShop?.slug}
+        />
+        <ErrorAlertCard
+          messages={[
+            selectedShop && !selectedShop.receiptFormPath && 'ขาดไฟล์ต้นแบบ',
+            selectedShop && selectedShop.receiptControlPath === null && 'ขาดไฟล์สมุดคุม',
+          ]}
+          action={
+            <Button danger ghost onClick={() => navigate('/setting')}>
+              ไปที่ตั้งค่า
+            </Button>
+          }
+        />
       </InputContainer>
       <div className="flex flex-row w-[500px] gap-2">
         <InputContainer>
-          <label>ร้าน</label>
-          <Select<string> allowClear options={shopOptions} onChange={handleShopChange} value={selectedShop?.Slug} />
-        </InputContainer>
-        <InputContainer>
           <label>เลขที่ใบเสร็จ</label>
-          <Input readOnly />
+          <Input readOnly value={data.receiptNO} />
         </InputContainer>
         <InputContainer>
           <label>ใบเสร็จลงวันที่</label>
-          <Input />
+          <DatePicker onChange={(date) => setData({ ...data, receiptDate: date })} />
         </InputContainer>
       </div>
       <InputContainer>
         <label>ส่วนราชการ</label>
-        <Input />
+        <AutoComplete<string>
+          value={data.customerName}
+          options={customerOptions}
+          onChange={(value) => setData({ ...data, customerName: value })}
+        />
       </InputContainer>
       <InputContainer>
         <label>ที่อยู่</label>
-        <Input />
+        <Input value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} />
       </InputContainer>
       <InputContainer>
         <label>รายละเอียดใบเสร็จ</label>
-        <AutoComplete
+        <AutoComplete<string>
           allowClear
           options={[{ value: 'ค่าวัสดุสำนักงาน' }, { value: 'ค่าวัสดุการศึกษา' }, { value: 'อื่นๆ โปรดระบุ', disabled: true }]}
+          onChange={(v) => setData({ ...data, detail: v })}
         />
       </InputContainer>
 
-      <div className="flex flex-row w-[500px] gap-2">
+      <div className="flex flex-row w-full gap-2">
         <InputContainer>
           <label>อ้างใบส่งของเลขที่</label>
-          <Input />
+          <Input onChange={(e) => setData({ ...data, deliveryNO: e.target.value })} />
         </InputContainer>
         <InputContainer>
           <label>ใบส่งของลงวันที่</label>
-          <Input />
+          <DatePicker onChange={(date) => setData({ ...data, deliveryDate: date })} />
         </InputContainer>
       </div>
       <InputContainer>
         <label>จำนวนเงิน</label>
-        <Input />
+        <Input
+          type="number"
+          value={data.amount}
+          onChange={(e) => setData({ ...data, amount: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber })}
+          min={0}
+        />
       </InputContainer>
-    </Form>
+      <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate}>
+        สร้างใบเสร็จ
+      </Button>
+    </div>
   );
-}
-
-function InputContainer({ children }: ComponentProps<'div'>) {
-  return <div className={'flex flex-col w-[500px]'}>{children}</div>;
 }

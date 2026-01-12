@@ -18,13 +18,13 @@ export namespace excel {
 export namespace main {
 	
 	export class ReceiptData {
-	    ReceiptNO: number;
+	    ReceiptNO: string;
 	    // Go type: time
 	    ReceiptDate?: any;
 	    CustomerName: string;
 	    Address?: string;
 	    Detail?: string;
-	    DeliveryNO?: number;
+	    DeliveryNO?: string;
 	    // Go type: time
 	    DeliveryDate?: any;
 	    Amount: number;
@@ -106,28 +106,29 @@ export namespace main {
 
 export namespace model {
 	
-	export class School {
+	export class Customer {
 	    ID: number;
-	    Name: string;
-	    Address?: string;
+	    name: string;
+	    address?: string | null;
 	
 	    static createFrom(source: any = {}) {
-	        return new School(source);
+	        return new Customer(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ID = source["ID"];
-	        this.Name = source["Name"];
-	        this.Address = source["Address"];
+	        this.name = source["name"];
+	        this.address = source["address"];
 	    }
 	}
 	export class Shop {
 	    ID: number;
-	    Slug: string;
-	    Name: string;
-	    BillFormPath?: string;
-	    BillcontrolPath?: string;
+	    slug: string;
+	    name: string;
+	    sortingLevel: number;
+	    receiptFormPath?: string | null;
+	    receiptControlPath?: string | null;
 	
 	    static createFrom(source: any = {}) {
 	        return new Shop(source);
@@ -136,10 +137,11 @@ export namespace model {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ID = source["ID"];
-	        this.Slug = source["Slug"];
-	        this.Name = source["Name"];
-	        this.BillFormPath = source["BillFormPath"];
-	        this.BillcontrolPath = source["BillcontrolPath"];
+	        this.slug = source["slug"];
+	        this.name = source["name"];
+	        this.sortingLevel = source["sortingLevel"];
+	        this.receiptFormPath = source["receiptFormPath"];
+	        this.receiptControlPath = source["receiptControlPath"];
 	    }
 	}
 

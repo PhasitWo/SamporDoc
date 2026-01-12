@@ -6,8 +6,8 @@ export function CreateReceipt(arg1) {
   return window['go']['main']['App']['CreateReceipt'](arg1);
 }
 
-export function GetAllSchools() {
-  return window['go']['main']['App']['GetAllSchools']();
+export function GetAllCustomers() {
+  return window['go']['main']['App']['GetAllCustomers']();
 }
 
 export function GetAllShops() {
@@ -16,6 +16,14 @@ export function GetAllShops() {
 
 export function GetNextControlNumber(arg1) {
   return window['go']['main']['App']['GetNextControlNumber'](arg1);
+}
+
+export function OpenDirectoryDialog() {
+  return window['go']['main']['App']['OpenDirectoryDialog']();
+}
+
+export function OpenExcelFileDialog() {
+  return window['go']['main']['App']['OpenExcelFileDialog']();
 }
 
 export function UpdateShopBySlug(arg1) {

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +12,8 @@ import (
 	"SamporDoc/backend/repository"
 	"SamporDoc/backend/seed"
 	"SamporDoc/backend/utils"
+
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -42,19 +43,19 @@ func (a *App) startup(ctx context.Context) {
 		panic("Failed to connect database")
 	}
 	// migrate
-	db.AutoMigrate(&model.School{}, &model.Shop{}, &model.Log{})
+	db.AutoMigrate(&model.Customer{}, &model.Shop{}, &model.Log{})
 
 	// create repo instance
 	a.repo = repository.NewRepo(ctx, db)
 
 	// seeding
-	schools, err := a.repo.GetAllSchools()
+	customers, err := a.repo.GetAllCustomers()
 	if err != nil {
-		fmt.Println("Error seeding database -> repo.getAllSchools")
+		fmt.Println("Error seeding database -> repo.GetAllCustomers")
 		panic(err)
 	}
-	if len(schools) == 0 {
-		seed.SeedSchools(a.repo)
+	if len(customers) == 0 {
+		seed.SeedCustomers(a.repo)
 	}
 	shops, err := a.repo.GetAllShops()
 	if err != nil {
@@ -71,37 +72,51 @@ func (a *App) GetAllShops() ([]model.Shop, error) {
 	return a.repo.GetAllShops()
 }
 
-func (a *App) UpdateShopBySlug(shop model.Shop) error {
+func (a *App) UpdateShopBySlug(shop model.Shop) (model.Shop, error) {
 	return a.repo.UpdateShopBySlug(&shop)
 }
 
-func (a *App) GetAllSchools() ([]model.School, error) {
-	return a.repo.GetAllSchools()
+func (a *App) GetAllCustomers() ([]model.Customer, error) {
+	return a.repo.GetAllCustomers()
 }
 
 func (a *App) GetNextControlNumber(controlFilePath string) (int, error) {
 	return excel.GetNextControlNumber(controlFilePath)
 }
 
+func (a *App) OpenDirectoryDialog() (string, error) {
+	return wailsRuntime.OpenDirectoryDialog(a.ctx, wailsRuntime.OpenDialogOptions{})
+}
+
+func (a *App) OpenExcelFileDialog() (string, error) {
+	return wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Filters: []wailsRuntime.FileFilter{{
+			DisplayName: "Excel",
+			Pattern:     "*.xlsx",
+		}},
+	})
+}
+
 type ReceiptData struct {
-	ReceiptNO    int
+	ReceiptNO    string
 	ReceiptDate  *time.Time
 	CustomerName string
 	Address      *string
 	Detail       *string
-	DeliveryNO   *int
+	DeliveryNO   *string
 	DeliveryDate *time.Time
 	Amount       float64
 }
 
 func (r ReceiptData) toExcelKeyValue() map[string]string {
 	raw := map[string]string{
-		"BILLNUMBER":     strconv.Itoa(r.ReceiptNO),
+		"BILLNUMBER":     r.ReceiptNO,
 		"BILLDATE":       utils.IfNilReturnStr(r.ReceiptDate, strings.Repeat(".", 40), utils.GetFullThaiDate(*r.ReceiptDate)),
 		"NAME":           r.CustomerName,
 		"ADDRESS2":       utils.IfNilReturnStr(r.Address, "", *r.Address),
 		"DETAIL":         utils.IfNilReturnStr(r.Detail, "", *r.Detail),
-		"DELIVERYNUMBER": utils.IfNilReturnStr(r.DeliveryNO, "", utils.GetShortThaiDate(*r.DeliveryDate)),
+		"DELIVERYNUMBER": utils.IfNilReturnStr(r.DeliveryNO, "", *r.DeliveryNO),
+		"DELIVERYDATE":   utils.IfNilReturnStr(r.DeliveryDate, "", utils.GetShortThaiDate(*r.DeliveryDate)),
 		"MONEY":          fmt.Sprintf("%.2f", r.Amount),
 	}
 	return raw

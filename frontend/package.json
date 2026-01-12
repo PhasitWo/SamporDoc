@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "antd": "^6.1.4",
+    "dayjs": "^1.11.19",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router": "^7.12.0"
+    "react-router": "^7.12.0",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@types/react": "^18.0.17",

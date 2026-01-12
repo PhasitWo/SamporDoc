@@ -23,17 +23,17 @@ func (r *Repo) newError(err error) error {
 	return fmt.Errorf("[REPO]: %w", err)
 }
 
-func (r *Repo) GetAllSchools() ([]model.School, error) {
-	var schools []model.School
-	schools, err := gorm.G[model.School](r.DB).Find(r.ctx)
+func (r *Repo) GetAllCustomers() ([]model.Customer, error) {
+	var customers []model.Customer
+	customers, err := gorm.G[model.Customer](r.DB).Find(r.ctx)
 	if err != nil {
-		return schools, r.newError(err)
+		return customers, r.newError(err)
 	}
-	return schools, nil
+	return customers, nil
 }
 
-func (r *Repo) CreateSchool(school *model.School) error {
-	err := gorm.G[model.School](r.DB).Create(r.ctx, school)
+func (r *Repo) CreateCustomer(school *model.Customer) error {
+	err := gorm.G[model.Customer](r.DB).Create(r.ctx, school)
 	if err != nil {
 		return r.newError(err)
 	}
@@ -42,7 +42,7 @@ func (r *Repo) CreateSchool(school *model.School) error {
 
 func (r *Repo) GetAllShops() ([]model.Shop, error) {
 	var shops []model.Shop
-	shops, err := gorm.G[model.Shop](r.DB).Find(r.ctx)
+	shops, err := gorm.G[model.Shop](r.DB).Order("sorting_level asc").Find(r.ctx)
 	if err != nil {
 		return shops, r.newError(err)
 	}
@@ -57,12 +57,16 @@ func (r *Repo) CreateShop(shop *model.Shop) error {
 	return err
 }
 
-func (r *Repo) UpdateShopBySlug(shop *model.Shop) error {
-	_, err := gorm.G[model.Shop](r.DB).Where("slug = ?", shop.Slug).Updates(r.ctx, *shop)
+func (r *Repo) UpdateShopBySlug(shop *model.Shop) (retShop model.Shop, err error) {
+	_, err = gorm.G[model.Shop](r.DB).Where("slug = ?", shop.Slug).Updates(r.ctx, *shop)
 	if err != nil {
-		return r.newError(err)
+		return retShop, r.newError(err)
 	}
-	return err
+	retShop, err = gorm.G[model.Shop](r.DB).Where("id = ?", shop.ID).First(r.ctx)
+	if err != nil {
+		return retShop, r.newError(err)
+	}
+	return retShop, nil
 }
 
 func (r *Repo) CreateLog(action string, data ...any) error {

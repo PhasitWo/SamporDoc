@@ -8,13 +8,13 @@ import (
 )
 
 var DefaultShops []model.Shop = []model.Shop{
-	{Slug: "HJKmain", Name: "หจก (หลัก)"},
-	{Slug: "HJKsec", Name: "หจก (รอง)"},
-	{Slug: "BUMmain", Name: "บำเหน็จ (หลัก)"},
-	{Slug: "BUMsec", Name: "บำเหน็จ (รอง)"},
+	{Slug: "HJKmain", Name: "หจก (หลัก)", SortingLevel: 0},
+	{Slug: "HJKsec", Name: "หจก (รอง)", SortingLevel: 1},
+	{Slug: "BUMmain", Name: "บำเหน็จ (หลัก)", SortingLevel: 2},
+	{Slug: "BUMsec", Name: "บำเหน็จ (รอง)", SortingLevel: 3},
 }
 
-var DefaultSchools []model.School = []model.School{
+var DefaultCustomers []model.Customer = []model.Customer{
 	{
 		Name:    "โรงเรียนเขาดินพิทยารักษ์",
 		Address: utils.Ptr("อ.บำเหน็จณรงค์ จ.ชัยภูมิ"),
@@ -205,14 +205,14 @@ func SeedShops(repo *repository.Repo) {
 	fmt.Println("Finish seeding shops")
 }
 
-func SeedSchools(repo *repository.Repo) {
-	fmt.Println("Start seeding schools...")
-	for _, sch := range DefaultSchools {
-		err := repo.CreateSchool(&sch)
+func SeedCustomers(repo *repository.Repo) {
+	fmt.Println("Start seeding customers...")
+	for _, sch := range DefaultCustomers {
+		err := repo.CreateCustomer(&sch)
 		if err != nil {
-			fmt.Println("Error seeding database -> repo.CreateSchool")
+			fmt.Println("Error seeding database -> repo.CreateCustomer")
 			panic(err)
 		}
 	}
-	fmt.Println("Finish seeding schools")
+	fmt.Println("Finish seeding customers")
 }

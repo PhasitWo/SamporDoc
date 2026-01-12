@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -9,11 +10,23 @@ func Ptr[T any](v T) *T {
 	return &v
 }
 
-func IfNilReturnStr[T any](value *T, valueIfNil string, valueIfNotNil string) string {
+func IfNilReturnStr(value any, valueIfNil string, valueIfNotNil string) string {
+	// If the interface itself is nil
 	if value == nil {
-		return  valueIfNil
+		return valueIfNil
 	}
-	return  valueIfNotNil
+
+	v := reflect.ValueOf(value)
+
+	// Only certain types can be nil in Go
+	switch v.Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Chan, reflect.Func, reflect.Interface:
+		if v.IsNil() {
+			return valueIfNil
+		}
+	}
+
+	return valueIfNotNil
 }
 
 // ex. 1 ธันวาคม 2568
@@ -54,4 +67,23 @@ var ShortThaiMonthMap map[int]string = map[int]string{
 	10: "ต.ค.",
 	11: "พ.ย.",
 	12: "ธ.ค.",
+}
+
+func ParseTime(data any) (parsedTime *time.Time, err error) {
+	if data != nil {
+		strDate, ok := data.(string)
+		if ok && strDate != "" {
+			t, err := time.Parse(time.RFC3339, strDate)
+			if err == nil {
+				parsedTime = &t
+			}
+		}
+	}
+	return parsedTime, err
+}
+func ParseString(data string) (parsedStr *string) {
+	if data != "" {
+		parsedStr = &data
+	}
+	return parsedStr
 }

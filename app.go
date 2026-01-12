@@ -1,17 +1,21 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"strings"
-	"time"
-
 	"SamporDoc/backend/config"
 	"SamporDoc/backend/excel"
-	"SamporDoc/backend/model"
-	"SamporDoc/backend/repository"
-	"SamporDoc/backend/seed"
+	"SamporDoc/backend/infra/model"
+	"SamporDoc/backend/infra/repository"
+	"SamporDoc/backend/infra/seed"
+	"SamporDoc/backend/log"
 	"SamporDoc/backend/utils"
+	"context"
+	"errors"
+	"fmt"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"time"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -65,6 +69,16 @@ func (a *App) startup(ctx context.Context) {
 	if len(shops) == 0 {
 		seed.SeedShops(a.repo)
 	}
+}
+
+func (a *App) CMDOpenFile(filePath string) error {
+	var cmd *exec.Cmd
+	if runtime.GOOS == "darwin" {
+		cmd = exec.Command("open", filePath)
+	} else {
+		cmd = exec.Command("cmd", "/C", "start", filePath)
+	}
+	return cmd.Run()
 }
 
 // Binding
@@ -123,30 +137,93 @@ func (r ReceiptData) toExcelKeyValue() map[string]string {
 }
 
 type CreateReceiptParams struct {
-	TemplatePath   string
-	OutputFilePath string
-	Data           ReceiptData
-	ControlPath    string
-	ControlData    excel.ControlData
+	TemplatePath string
+	ControlPath  string
+	Filename     string
+	OutputDir    string
+	ReceiptNO    string
+	ReceiptDate  any // nullable
+	CustomerName string
+	Address      string // nullable
+	Detail       string // nullable
+	DeliveryNO   string // nullable
+	DeliveryDate any    // nullable
+	Amount       float64
 }
 
-func (a *App) CreateReceipt(params CreateReceiptParams) error {
-	excelFile, err := excel.CreateExcelFile(params.TemplatePath, params.Data.toExcelKeyValue())
-	if err != nil {
-		return err
+func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
+	// for logging
+	logger := log.NewUnitOfLog(a.repo)
+	// 	process data
+	address := utils.ParseString(params.Address)
+	detail := utils.ParseString(params.Detail)
+	deliveryNO := utils.ParseString(params.DeliveryNO)
+	var receiptDate, deliveryDate *time.Time
+	if receiptDate, err = utils.ParseTime(params.ReceiptDate); err != nil {
+		return logger.NewErrorAndLog(err, "ParseTime(params.ReceiptDate)")
 	}
-	controlFile, err := excel.WriteControlFile(params.ControlPath, params.ControlData)
-	if err != nil {
-		return err
+	if deliveryDate, err = utils.ParseTime(params.DeliveryDate); err != nil {
+		return logger.NewErrorAndLog(err, "ParseTime(params.DeliveryDate)")
 	}
+	// insert to database if the customerName does not exist
+	if address != nil {
+		_, err = a.repo.GetCustomerByName(params.CustomerName)
+		if errors.Is(errors.Unwrap(err), gorm.ErrRecordNotFound) {
+			// not throwing any error!
+			newCustomer := model.Customer{Name: params.CustomerName, Address: address}
+			err = a.repo.CreateCustomer(&newCustomer)
+			if err == nil {
+				logger.Log("CreateCustomer", newCustomer)
+			}
+		}
+	}
+	// create excel file
+	receiptData := ReceiptData{
+		ReceiptNO:    params.ReceiptNO,
+		ReceiptDate:  receiptDate,
+		CustomerName: params.CustomerName,
+		Address:      address,
+		Detail:       detail,
+		DeliveryNO:   deliveryNO,
+		DeliveryDate: deliveryDate,
+		Amount:       params.Amount,
+	}
+	excelFile, err := excel.CreateExcelFile(params.TemplatePath, receiptData.toExcelKeyValue())
+	if err != nil {
+		return logger.NewErrorAndLog(err, "CreateExcelFile")
+	}
+	logger.Log("CreateExcelFile", params.TemplatePath, receiptData)
+
+	controlData := excel.ControlData{
+		NO:           params.ReceiptNO,
+		CustomerName: params.CustomerName,
+		Amount:       params.Amount,
+		Date:         receiptDate,
+	}
+	controlFile, err := excel.WriteControlFile(params.ControlPath, controlData)
+	if err != nil {
+		return logger.NewErrorAndLog(err, "WriteControlFile")
+	}
+	logger.Log("WriteControlFile", params.ControlPath, controlData)
+	
 	// save
-	err = excelFile.SaveAs(params.OutputFilePath)
+	outputFilePath := filepath.Join(params.OutputDir, params.Filename+".xlsx")
+	err = excelFile.SaveAs(outputFilePath)
 	if err != nil {
-		return err
+		return logger.NewErrorAndLog(err, "SaveOuputReceiptFile")
 	}
+	logger.Log("SaveOuputReceiptFile", outputFilePath)
+
 	err = controlFile.Save()
 	if err != nil {
-		return err
+		return logger.NewErrorAndLog(err, "SaveControlFile")
+	}
+	logger.Log("SaveControlFile", controlFile.Path)
+
+	// open file
+	err = a.CMDOpenFile(outputFilePath)
+	if err != nil {
+		return logger.NewErrorAndLog(err, "SaveControlFile")
 	}
 	return nil
 }

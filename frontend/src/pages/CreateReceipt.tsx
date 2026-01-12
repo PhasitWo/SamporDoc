@@ -1,7 +1,7 @@
-import { Input, Button, AutoComplete, Select, DatePicker } from 'antd';
+import { Input, Button, AutoComplete, Select, DatePicker, App } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
-import { model } from '../../wailsjs/go/models';
-import { GetNextControlNumber } from '../../wailsjs/go/main/App';
+import { main, model } from '../../wailsjs/go/models';
+import { GetNextControlNumber, OpenDirectoryDialog, CreateReceipt } from '../../wailsjs/go/main/App';
 import type { DefaultOptionType } from 'antd/es/select';
 import { Dayjs } from 'dayjs';
 import ErrorAlertCard from '../components/ErrorAlertCard';
@@ -11,6 +11,10 @@ import { useAppStore } from '../store/useAppStore';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
+}
+
+interface CustomerOptionType extends DefaultOptionType {
+  meta: model.Customer;
 }
 
 interface FormData {
@@ -26,8 +30,9 @@ interface FormData {
   amount: number;
 }
 
-export default function CreateReceipt() {
+export default function CreateReceiptPage() {
   const navigate = useNavigate();
+  const { message } = App.useApp();
   // form
   const [data, setData] = useState<FormData>({
     filename: '',
@@ -61,16 +66,22 @@ export default function CreateReceipt() {
   }, [selectedShop]);
 
   // customers
+  const [selectedCustomer, setSelectedCustomer] = useState<model.Customer | null>(null);
   const customers = useAppStore((s) => s.customers);
-  const customerOptions = useMemo<DefaultOptionType[]>(
-    () => customers.map<DefaultOptionType>((s) => ({ value: s.name, label: s.name })),
-    [shops]
+  const customerOptions = useMemo<CustomerOptionType[]>(
+    () => customers.map<CustomerOptionType>((c) => ({ value: c.name, label: c.name, meta: c })),
+    [customers]
   );
 
-  useEffect(() => {
-    const foundAddress = customers.find((v) => v.name === data.customerName)?.address;
-    setData({ ...data, address: foundAddress ?? '' });
-  }, [data.customerName]);
+  const handleCustomerChange = (value: string, option?: CustomerOptionType | CustomerOptionType[]) => {
+    if (option && 'meta' in option && !Array.isArray(option)) {
+      setSelectedCustomer(option.meta);
+      setData({ ...data, customerName: option.meta.name, address: option.meta.address ?? '' });
+    } else {
+      setSelectedCustomer(null);
+      setData({ ...data, customerName: value, address: '' });
+    }
+  };
 
   const readyToCreate = useMemo<boolean>(() => {
     if (selectedShop == null || selectedShop.receiptFormPath == undefined || selectedShop.receiptControlPath == undefined) {
@@ -93,6 +104,40 @@ export default function CreateReceipt() {
     }
   };
 
+  const handleSubmit = async () => {
+    if (
+      !selectedShop ||
+      !selectedShop.receiptFormPath ||
+      !selectedShop.receiptControlPath ||
+      data.filename.trim() === '' ||
+      data.saveDir === '' ||
+      data.receiptNO === '' ||
+      data.amount <= 0 ||
+      data.customerName.trim() === ''
+    ) {
+      return;
+    }
+    message.loading('สร้างไฟล์ใบเสร็จรับเงิน...');
+    await CreateReceipt({
+      TemplatePath: selectedShop.receiptFormPath,
+      Filename: data.filename.trim(),
+      OutputDir: data.saveDir,
+      ReceiptNO: data.receiptNO,
+      CustomerName: data.customerName.trim(),
+      Amount: data.amount,
+      ControlPath: selectedShop.receiptControlPath,
+      Address: data.address,
+      DeliveryNO: data.deliveryNO,
+      Detail: data.detail,
+      DeliveryDate: data.deliveryDate?.toISOString() ?? '',
+      ReceiptDate: data.receiptDate?.toISOString() ?? '',
+    });
+    message.destroy();
+    message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!');
+    // refetch
+    useAppStore.getState().fetchCustomers();
+  };
+
   return (
     <div className="mx-auto flex flex-col gap-3 items-center justify-center max-w-[500px]">
       <InputContainer>
@@ -102,8 +147,19 @@ export default function CreateReceipt() {
       <InputContainer>
         <label>บันทึกที่</label>
         <div className="flex gap-1">
-          <Input readOnly />
-          <Button type="default">เลือก</Button>
+          <Input readOnly value={data.saveDir} />
+          <Button
+            type="default"
+            onClick={() =>
+              OpenDirectoryDialog().then((path) => {
+                if (path) {
+                  setData({ ...data, saveDir: path });
+                }
+              })
+            }
+          >
+            เลือก
+          </Button>
         </div>
       </InputContainer>
       <InputContainer>
@@ -137,16 +193,21 @@ export default function CreateReceipt() {
         </InputContainer>
       </div>
       <InputContainer>
-        <label>ส่วนราชการ</label>
-        <AutoComplete<string>
+        <label>ชื่อลูกค้า</label>
+        <AutoComplete<string, CustomerOptionType>
           value={data.customerName}
           options={customerOptions}
-          onChange={(value) => setData({ ...data, customerName: value })}
+          onChange={handleCustomerChange}
+          allowClear
         />
       </InputContainer>
       <InputContainer>
         <label>ที่อยู่</label>
-        <Input value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} />
+        <Input
+          value={data.address}
+          onChange={(e) => setData({ ...data, address: e.target.value })}
+          disabled={Boolean(selectedCustomer)}
+        />
       </InputContainer>
       <InputContainer>
         <label>รายละเอียดใบเสร็จ</label>
@@ -176,7 +237,7 @@ export default function CreateReceipt() {
           min={0}
         />
       </InputContainer>
-      <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate}>
+      <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate} onClick={handleSubmit}>
         สร้างใบเสร็จ
       </Button>
     </div>

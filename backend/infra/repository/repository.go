@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"SamporDoc/backend/model"
+	"SamporDoc/backend/infra/model"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -32,8 +32,16 @@ func (r *Repo) GetAllCustomers() ([]model.Customer, error) {
 	return customers, nil
 }
 
-func (r *Repo) CreateCustomer(school *model.Customer) error {
-	err := gorm.G[model.Customer](r.DB).Create(r.ctx, school)
+func (r *Repo) GetCustomerByName(name string) (model.Customer, error) {
+	customer, err := gorm.G[model.Customer](r.DB).Where("name = ?", name).First(r.ctx)
+	if err != nil {
+		return customer, r.newError(err)
+	}
+	return customer, nil
+}
+
+func (r *Repo) CreateCustomer(customer *model.Customer) error {
+	err := gorm.G[model.Customer](r.DB).Create(r.ctx, customer)
 	if err != nil {
 		return r.newError(err)
 	}
@@ -69,7 +77,14 @@ func (r *Repo) UpdateShopBySlug(shop *model.Shop) (retShop model.Shop, err error
 	return retShop, nil
 }
 
-func (r *Repo) CreateLog(action string, data ...any) error {
+type Status string
+
+const (
+	SUCCESS Status = "SUCCESS"
+	ERROR   Status = "ERROR"
+)
+
+func (r *Repo) CreateLog(action string, status Status, correlationID *int64, data ...any) error {
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return r.newError(err)
@@ -77,6 +92,7 @@ func (r *Repo) CreateLog(action string, data ...any) error {
 	dataStr := string(bytes)
 	err = gorm.G[model.Log](r.DB).Create(r.ctx, &model.Log{
 		Action: action,
+		Status: string(status),
 		Data:   datatypes.JSON(dataStr),
 	})
 	return err

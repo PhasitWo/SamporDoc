@@ -1,8 +1,8 @@
 package seed
 
 import (
-	"SamporDoc/backend/model"
-	"SamporDoc/backend/repository"
+	"SamporDoc/backend/infra/model"
+	"SamporDoc/backend/infra/repository"
 	"SamporDoc/backend/utils"
 	"fmt"
 )

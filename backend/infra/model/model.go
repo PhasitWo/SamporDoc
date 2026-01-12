@@ -8,7 +8,7 @@ import (
 
 type Customer struct {
 	ID      uint64  `gorm:"primaryKey;autoIncrement"`
-	Name    string  `gorm:"index" json:"name"` 
+	Name    string  `gorm:"index" json:"name"`
 	Address *string `json:"address" ts_type:"string | null"`
 }
 
@@ -22,8 +22,10 @@ type Shop struct {
 }
 
 type Log struct {
-	ID        uint64    `gorm:"primaryKey;autoIncrement"`
-	CreatedAt time.Time `gorm:"index"`
-	Action    string
-	Data      datatypes.JSON
+	ID            uint64    `gorm:"primaryKey;autoIncrement"`
+	CreatedAt     time.Time `gorm:"index"`
+	Status        string
+	Action        string
+	Data          datatypes.JSON
+	CorrelationID int64 `gorm:"index"`
 }

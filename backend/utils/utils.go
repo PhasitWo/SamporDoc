@@ -10,10 +10,10 @@ func Ptr[T any](v T) *T {
 	return &v
 }
 
-func IfNilReturnStr(value any, valueIfNil string, valueIfNotNil string) string {
+func IsNil[T any](value *T) bool {
 	// If the interface itself is nil
 	if value == nil {
-		return valueIfNil
+		return true
 	}
 
 	v := reflect.ValueOf(value)
@@ -22,11 +22,11 @@ func IfNilReturnStr(value any, valueIfNil string, valueIfNotNil string) string {
 	switch v.Kind() {
 	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Chan, reflect.Func, reflect.Interface:
 		if v.IsNil() {
-			return valueIfNil
+			return true
 		}
 	}
 
-	return valueIfNotNil
+	return false
 }
 
 // ex. 1 ธันวาคม 2568

@@ -6,12 +6,12 @@ export namespace main {
 	    Filename: string;
 	    OutputDir: string;
 	    ReceiptNO: string;
-	    ReceiptDate: any;
+	    ReceiptDate?: string;
 	    CustomerName: string;
-	    Address: string;
-	    Detail: string;
-	    DeliveryNO: string;
-	    DeliveryDate: any;
+	    Address?: string;
+	    Detail?: string;
+	    DeliveryNO?: string;
+	    DeliveryDate?: string;
 	    Amount: number;
 	
 	    static createFrom(source: any = {}) {

@@ -123,14 +123,32 @@ type ReceiptData struct {
 }
 
 func (r ReceiptData) toExcelKeyValue() map[string]string {
+	var receiptDate, address, detail, deliveryNO, deliveryDate string
+	if r.ReceiptDate == nil {
+		receiptDate = strings.Repeat(".", 40)
+	} else {
+		receiptDate = utils.GetFullThaiDate(*r.ReceiptDate)
+	}
+	if r.Address != nil {
+		address = *r.Address
+	}
+	if r.Detail != nil {
+		detail = *r.Detail
+	}
+	if r.DeliveryNO != nil {
+		deliveryNO = *r.DeliveryNO
+	}
+	if r.DeliveryDate != nil {
+		deliveryDate = utils.GetShortThaiDate(*r.DeliveryDate)
+	}
 	raw := map[string]string{
 		"BILLNUMBER":     r.ReceiptNO,
-		"BILLDATE":       utils.IfNilReturnStr(r.ReceiptDate, strings.Repeat(".", 40), utils.GetFullThaiDate(*r.ReceiptDate)),
+		"BILLDATE":       receiptDate,
 		"NAME":           r.CustomerName,
-		"ADDRESS2":       utils.IfNilReturnStr(r.Address, "", *r.Address),
-		"DETAIL":         utils.IfNilReturnStr(r.Detail, "", *r.Detail),
-		"DELIVERYNUMBER": utils.IfNilReturnStr(r.DeliveryNO, "", *r.DeliveryNO),
-		"DELIVERYDATE":   utils.IfNilReturnStr(r.DeliveryDate, "", utils.GetShortThaiDate(*r.DeliveryDate)),
+		"ADDRESS2":       address,
+		"DETAIL":         detail,
+		"DELIVERYNUMBER": deliveryNO,
+		"DELIVERYDATE":   deliveryDate,
 		"MONEY":          fmt.Sprintf("%.2f", r.Amount),
 	}
 	return raw
@@ -142,12 +160,12 @@ type CreateReceiptParams struct {
 	Filename     string
 	OutputDir    string
 	ReceiptNO    string
-	ReceiptDate  any // nullable
+	ReceiptDate  *string // nullable
 	CustomerName string
-	Address      string // nullable
-	Detail       string // nullable
-	DeliveryNO   string // nullable
-	DeliveryDate any    // nullable
+	Address      *string // nullable
+	Detail       *string // nullable
+	DeliveryNO   *string // nullable
+	DeliveryDate *string // nullable
 	Amount       float64
 }
 
@@ -155,9 +173,6 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 	// for logging
 	logger := log.NewUnitOfLog(a.repo)
 	// 	process data
-	address := utils.ParseString(params.Address)
-	detail := utils.ParseString(params.Detail)
-	deliveryNO := utils.ParseString(params.DeliveryNO)
 	var receiptDate, deliveryDate *time.Time
 	if receiptDate, err = utils.ParseTime(params.ReceiptDate); err != nil {
 		return logger.NewErrorAndLog(err, "ParseTime(params.ReceiptDate)")
@@ -166,11 +181,11 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 		return logger.NewErrorAndLog(err, "ParseTime(params.DeliveryDate)")
 	}
 	// insert to database if the customerName does not exist
-	if address != nil {
+	if params.Address != nil {
 		_, err = a.repo.GetCustomerByName(params.CustomerName)
 		if errors.Is(errors.Unwrap(err), gorm.ErrRecordNotFound) {
 			// not throwing any error!
-			newCustomer := model.Customer{Name: params.CustomerName, Address: address}
+			newCustomer := model.Customer{Name: params.CustomerName, Address: params.Address}
 			err = a.repo.CreateCustomer(&newCustomer)
 			if err == nil {
 				logger.Log("CreateCustomer", newCustomer)
@@ -182,9 +197,9 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 		ReceiptNO:    params.ReceiptNO,
 		ReceiptDate:  receiptDate,
 		CustomerName: params.CustomerName,
-		Address:      address,
-		Detail:       detail,
-		DeliveryNO:   deliveryNO,
+		Address:      params.Address,
+		Detail:       params.Detail,
+		DeliveryNO:   params.DeliveryNO,
 		DeliveryDate: deliveryDate,
 		Amount:       params.Amount,
 	}
@@ -205,7 +220,7 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 		return logger.NewErrorAndLog(err, "WriteControlFile")
 	}
 	logger.Log("WriteControlFile", params.ControlPath, controlData)
-	
+
 	// save
 	outputFilePath := filepath.Join(params.OutputDir, params.Filename+".xlsx")
 	err = excelFile.SaveAs(outputFilePath)

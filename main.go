@@ -19,7 +19,7 @@ var icon []byte
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
- 
+
 	// Menu
 	AppMenu := menu.NewMenu()
 	if runtime.GOOS == "darwin" {

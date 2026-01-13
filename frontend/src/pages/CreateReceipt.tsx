@@ -8,6 +8,7 @@ import ErrorAlertCard from '../components/ErrorAlertCard';
 import { useNavigate } from 'react-router';
 import InputContainer from '../components/InputContainer';
 import { useAppStore } from '../store/useAppStore';
+import Asterisk from '../components/Asterisk';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
@@ -126,11 +127,11 @@ export default function CreateReceiptPage() {
       CustomerName: data.customerName.trim(),
       Amount: data.amount,
       ControlPath: selectedShop.receiptControlPath,
-      Address: data.address,
-      DeliveryNO: data.deliveryNO,
-      Detail: data.detail,
-      DeliveryDate: data.deliveryDate?.toISOString() ?? '',
-      ReceiptDate: data.receiptDate?.toISOString() ?? '',
+      Address: data.address.trim() || undefined,
+      DeliveryNO: data.deliveryNO.trim() || undefined,
+      Detail: data.detail.trim() || undefined,
+      DeliveryDate: data.deliveryDate?.toISOString(),
+      ReceiptDate: data.receiptDate?.toISOString(),
     });
     message.destroy();
     message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!');
@@ -141,11 +142,17 @@ export default function CreateReceiptPage() {
   return (
     <div className="mx-auto flex flex-col gap-3 items-center justify-center max-w-[500px]">
       <InputContainer>
-        <label>ชื่อไฟล์</label>
+        <label>
+          ชื่อไฟล์
+          <Asterisk />
+        </label>
         <Input onChange={(e) => setData({ ...data, filename: e.target.value })} />
       </InputContainer>
       <InputContainer>
-        <label>บันทึกที่</label>
+        <label>
+          บันทึกที่
+          <Asterisk />
+        </label>
         <div className="flex gap-1">
           <Input readOnly value={data.saveDir} />
           <Button
@@ -163,7 +170,10 @@ export default function CreateReceiptPage() {
         </div>
       </InputContainer>
       <InputContainer>
-        <label>ร้าน</label>
+        <label>
+          ร้าน
+          <Asterisk />
+        </label>
         <Select<string | undefined, ShopOptionType>
           allowClear
           options={shopOptions}
@@ -193,7 +203,10 @@ export default function CreateReceiptPage() {
         </InputContainer>
       </div>
       <InputContainer>
-        <label>ชื่อลูกค้า</label>
+        <label>
+          ชื่อลูกค้า
+          <Asterisk />
+        </label>
         <AutoComplete<string, CustomerOptionType>
           value={data.customerName}
           options={customerOptions}
@@ -229,7 +242,10 @@ export default function CreateReceiptPage() {
         </InputContainer>
       </div>
       <InputContainer>
-        <label>จำนวนเงิน</label>
+        <label>
+          จำนวนเงิน
+          <Asterisk />
+        </label>
         <Input
           type="number"
           value={data.amount}

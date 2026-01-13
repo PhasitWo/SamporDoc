@@ -1,3 +1,6 @@
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
 export function isDeepEqual(obj1: any, obj2: any) {
   if (obj1 === obj2) return true;
 
@@ -19,3 +22,6 @@ export function isDeepEqual(obj1: any, obj2: any) {
   return true;
 }
 
+export function cn(...args: ClassValue[]): string {
+  return twMerge(clsx(args));
+}

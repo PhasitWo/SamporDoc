@@ -8,16 +8,16 @@ import (
 )
 
 var DefaultShops []model.Shop = []model.Shop{
-	{Slug: "HJKmain", Name: "หจก (หลัก)", SortingLevel: 0},
-	{Slug: "HJKsec", Name: "หจก (รอง)", SortingLevel: 1},
-	{Slug: "BUMmain", Name: "บำเหน็จ (หลัก)", SortingLevel: 2},
-	{Slug: "BUMsec", Name: "บำเหน็จ (รอง)", SortingLevel: 3},
+	{Slug: "HJKmain", Name: "หจก.3พ.รุ่งเรืองศึกษาภัณฑ์ (หลัก)", SortingLevel: 0},
+	{Slug: "HJKsec", Name: "หจก.3พ.รุ่งเรืองศึกษาภัณฑ์ (รอง)", SortingLevel: 1},
+	{Slug: "BUMmain", Name: "ร้านบำเหน็จศึกษาภัณฑ์ (หลัก)", SortingLevel: 2},
+	{Slug: "BUMsec", Name: "ร้านบำเหน็จศึกษาภัณฑ์ (รอง)", SortingLevel: 3},
 }
 
 var DefaultCustomers []model.Customer = []model.Customer{
 	{
 		Name:    "โรงเรียนเขาดินพิทยารักษ์",
-		Address: utils.Ptr("อ.บำเหน็จณรงค์ จ.ชัยภูมิ"),
+		Address: utils.Ptr("อ.บำเหน็จณรงค์ จ.ชัยภูมิ"), 
 	},
 	{
 		Name:    "โรงเรียนเทพสถิตวิทยา",

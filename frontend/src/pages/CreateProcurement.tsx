@@ -1,6 +1,6 @@
-import { Input, Button, AutoComplete, Select, DatePicker, App } from 'antd';
+import { Input, Button, AutoComplete, Select, DatePicker, App, Divider, Radio } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
-import { model } from '../../wailsjs/go/models';
+import { main, model } from '../../wailsjs/go/models';
 import { GetNextControlNumber, OpenDirectoryDialog, CreateReceipt } from '../../wailsjs/go/main/App';
 import type { DefaultOptionType } from 'antd/es/select';
 import { Dayjs } from 'dayjs';
@@ -10,6 +10,7 @@ import InputContainer from '../components/InputContainer';
 import { useAppStore } from '../store/useAppStore';
 import Asterisk from '../components/Asterisk';
 import { useShowBoundary } from '../utils';
+import type { CheckboxGroupProps } from 'antd/es/checkbox';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
@@ -32,7 +33,7 @@ interface FormData {
   amount: number;
 }
 
-export default function CreateReceiptPage() {
+export default function CreateProcurementPage() {
   const navigate = useNavigate();
   const { message } = App.useApp();
   const { showBoundary } = useShowBoundary();
@@ -196,19 +197,77 @@ export default function CreateReceiptPage() {
               ไปที่ตั้งค่า
             </Button>
           }
-          noTitle
         />
       </InputContainer>
       <div className="flex flex-row w-[500px] gap-2">
         <InputContainer>
-          <label>เลขที่ใบเสร็จ</label>
-          <Input readOnly value={data.receiptNO} />
+          <label>ใบส่งของเลขที่</label>
+          <Input onChange={(e) => setData({ ...data, deliveryNO: e.target.value })} />
         </InputContainer>
         <InputContainer>
-          <label>ใบเสร็จลงวันที่</label>
-          <DatePicker onChange={(date) => setData({ ...data, receiptDate: date })} />
+          <label>ใบส่งของลงวันที่</label>
+          <DatePicker onChange={(date) => setData({ ...data, deliveryDate: date })} />
         </InputContainer>
       </div>
+      <InputContainer>
+        <label>
+          ซื้อ
+          <Asterisk />
+        </label>
+        <AutoComplete<string>
+          allowClear
+          options={[
+            { value: 'วัสดุสำนักงาน' },
+            { value: 'วัสดุการศึกษา' },
+            { value: 'หนังสือเรียน' },
+            { value: 'อื่นๆ โปรดระบุ', disabled: true },
+          ]}
+          onChange={(v) => setData({ ...data, detail: v })}
+        />
+      </InputContainer>
+      <InputContainer>
+        <label>โครงการ</label>
+        <Input />
+      </InputContainer>
+      <InputContainer>
+        <label>
+          จำนวนเงิน
+          <Asterisk />
+        </label>
+        <Input
+          type="number"
+          value={data.amount}
+          onChange={(e) => setData({ ...data, amount: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber })}
+          min={0}
+        />
+      </InputContainer>
+      <Divider />
+      <InputContainer>
+        <label>จำนวนรายการ</label>
+        <Radio.Group
+          vertical
+          options={[
+            { value: 'lte', label: 'น้อยกว่าหรือเท่ากับ 11 รายการ' },
+            { value: 'gt', label: 'มากกว่า 11 รายการ' },
+            {
+              value: 'custom',
+              label: <Input placeholder="ระบุจำนวน" type="number" min={0} />,
+            },
+          ]}
+          defaultValue="lte"
+        />
+      </InputContainer>
+      <InputContainer>
+        <label>รูปแบบ</label>
+        <Select<string, DefaultOptionType>
+          options={[
+            { value: 'full', label: 'ฉบับเต็ม' },
+            { value: 'only_delivery_note', label: 'เฉพาะใบส่งของ' },
+            { value: 'only_quotation', label: 'เฉพาะใบเสนอราคา' },
+          ]}
+        />
+      </InputContainer>
+      <Divider />
       <InputContainer>
         <label>
           ชื่อลูกค้า
@@ -230,38 +289,32 @@ export default function CreateReceiptPage() {
         />
       </InputContainer>
       <InputContainer>
-        <label>รายละเอียดใบเสร็จ</label>
-        <AutoComplete<string>
-          allowClear
-          options={[{ value: 'ค่าวัสดุสำนักงาน' }, { value: 'ค่าวัสดุการศึกษา' }, { value: 'อื่นๆ โปรดระบุ', disabled: true }]}
-          onChange={(v) => setData({ ...data, detail: v })}
-        />
+        <label>ประธานกรรมการ</label>
+        <Input />
+      </InputContainer>
+      <InputContainer>
+        <label>กรรมการ1</label>
+        <Input />
+      </InputContainer>
+      <InputContainer>
+        <label>กรรมการ2</label>
+        <Input />
+      </InputContainer>
+      <InputContainer>
+        <label>เจ้าหน้าที่พัสดุ</label>
+        <Input />
+      </InputContainer>
+      <InputContainer>
+        <label>หัวหน้าเจ้าหน้าที่</label>
+        <Input />
+      </InputContainer>
+      <InputContainer>
+        <label>ผู้อำนวยการ</label>
+        <Input />
       </InputContainer>
 
-      <div className="flex flex-row w-full gap-2">
-        <InputContainer>
-          <label>อ้างใบส่งของเลขที่</label>
-          <Input onChange={(e) => setData({ ...data, deliveryNO: e.target.value })} />
-        </InputContainer>
-        <InputContainer>
-          <label>ใบส่งของลงวันที่</label>
-          <DatePicker onChange={(date) => setData({ ...data, deliveryDate: date })} />
-        </InputContainer>
-      </div>
-      <InputContainer>
-        <label>
-          จำนวนเงิน
-          <Asterisk />
-        </label>
-        <Input
-          type="number"
-          value={data.amount}
-          onChange={(e) => setData({ ...data, amount: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber })}
-          min={0}
-        />
-      </InputContainer>
-      <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate} onClick={handleSubmit}>
-        สร้างใบเสร็จ
+      <Button className="mt-3 w-full  mb-5" type="primary" disabled={!readyToCreate} onClick={handleSubmit}>
+        สร้างจัดซื้อจัดจ้าง
       </Button>
     </div>
   );

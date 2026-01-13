@@ -6,6 +6,7 @@ import { useAppStore } from '../store/useAppStore';
 import { DefaultOptionType } from 'antd/es/select';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { isDeepEqual } from '../utils';
+import { useSearchParams } from 'react-router';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
@@ -18,6 +19,17 @@ export default function Setting() {
     () => shops.map<ShopOptionType>((s) => ({ value: s.slug, label: s.name, meta: s })),
     [shops]
   );
+  
+  const [searchParams] = useSearchParams();
+  const shopSlug = searchParams.get('shopSlug');
+  useEffect(() => {
+    if (shopSlug) {
+      const found = shops.find((s) => s.slug === shopSlug);
+      if (found) {
+        setSelectedShop(found);
+      }
+    }
+  }, [shopSlug]);
 
   const handleShopChange = (_: any, option?: ShopOptionType | ShopOptionType[]) => {
     if (option && !Array.isArray(option)) {
@@ -34,7 +46,7 @@ export default function Setting() {
         options={shopOptions}
         onChange={handleShopChange}
         value={selectedShop?.slug}
-        className="min-w-[50%] self-start"
+        className="w-full self-start"
         placeholder="เลือกร้าน"
       />
       {selectedShop && <SingleShopSetting data={selectedShop} />}
@@ -69,7 +81,7 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
 
   return (
     <div className="w-[500px] mt-5 flex flex-col gap-3">
-      <div className="font-bold text-2xl mb-3">{shop.name}</div>
+      <div className="font-bold text-2xl mb-3">ใบเสร็จรับเงิน</div>
       <InputContainer>
         <label>ไฟล์ต้นแบบใบเสร็จรับเงิน</label>
         <div className="flex gap-1">

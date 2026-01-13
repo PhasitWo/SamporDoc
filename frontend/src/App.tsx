@@ -10,6 +10,10 @@ import thTH from 'antd/es/locale/th_TH';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import buddhistEra from 'dayjs/plugin/buddhistEra';
+import { ErrorBoundary } from 'react-error-boundary';
+import ErrorFallback from './pages/ErrorFallback';
+import { useShowBoundary } from './utils';
+import CreateProcurement from './pages/CreateProcurement';
 
 dayjs.locale('th');
 dayjs.extend(buddhistEra);
@@ -33,13 +37,19 @@ const globalBuddhistLocale: typeof thTH = {
   },
 };
 
+const primaryColorMap: Record<string, string | undefined> = {
+  '/': '#00b96b',
+  '/createProcurement': '#e68415',
+};
+
 const AppLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const appStore = useAppStore();
+  const init = useAppStore((s) => s.init);
+  const { showBoundary } = useShowBoundary();
 
   useEffect(() => {
-    appStore.init();
+    init().catch(showBoundary);
   }, []);
 
   return (
@@ -48,14 +58,15 @@ const AppLayout = () => {
         <Layout.Header className="px-5">
           <Menu
             mode="horizontal"
-            defaultSelectedKeys={['createReceipt']}
             items={[
               { key: '/', label: 'สร้างใบเสร็จรับเงิน' },
+              { key: '/createProcurement', label: 'สร้างจัดซื้อจัดจ้าง' },
               { key: '/setting', label: 'ตั้งค่า' },
             ]}
             onClick={(info) => navigate(info.key)}
             style={{ flex: 1, minWidth: 0 }}
             selectedKeys={[location.pathname]}
+            styles={{ itemContent: { paddingTop: '5px' } }}
           />
         </Layout.Header>
         <Layout.Content className="pt-5">
@@ -67,8 +78,9 @@ const AppLayout = () => {
 };
 
 function MyApp() {
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
+  const init = useAppStore((s) => s.init);
 
   EventsOn('navigate', (route: string) => {
     navigate(route);
@@ -78,7 +90,7 @@ function MyApp() {
     <ConfigProvider
       theme={{
         token: {
-          ...(location.pathname === '/' ? { colorPrimary: '#00b96b' } : undefined),
+          ...(primaryColorMap[location.pathname] ? { colorPrimary: primaryColorMap[location.pathname] } : undefined),
           fontSize: 18,
         },
         components: {
@@ -87,14 +99,23 @@ function MyApp() {
       }}
       locale={globalBuddhistLocale}
     >
-      <App>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route index element={<CreateReceipt />} />
-            <Route path="/setting" element={<Setting />} />
-          </Route>
-        </Routes>
-      </App>
+      <ErrorBoundary
+        FallbackComponent={ErrorFallback}
+        onReset={() => {
+          init();
+          navigate('/');
+        }}
+      >
+        <App>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route index element={<CreateReceipt />} />
+              <Route path="/createProcurement" element={<CreateProcurement />} />
+              <Route path="/setting" element={<Setting />} />
+            </Route>
+          </Routes>
+        </App>
+      </ErrorBoundary>
     </ConfigProvider>
   );
 }

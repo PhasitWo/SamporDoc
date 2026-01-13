@@ -4,8 +4,9 @@ import { useMemo } from 'react';
 function ErrorAlertCard({
   messages,
   title = 'เกิดข้อผิดพลาด',
+  noTitle,
   ...rest
-}: Omit<AlertProps, 'description' | 'type'> & { messages?: Array<string | boolean | undefined | null> }) {
+}: Omit<AlertProps, 'description' | 'type'> & { messages?: Array<string | boolean | undefined | null>, noTitle?: boolean }) {
   const node = useMemo<React.ReactNode | undefined | null>(() => {
     const arr = messages?.filter((v) => typeof v === 'string');
     if (arr?.length == 0) {
@@ -25,6 +26,6 @@ function ErrorAlertCard({
   if (!node) {
     return null;
   }
-  return <Alert type="error" showIcon description={node} title={title} {...rest} />;
+  return <Alert type="error" showIcon description={node} title={!noTitle && title} {...rest} />;
 }
 export default ErrorAlertCard;

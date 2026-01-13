@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from 'clsx';
+import { useErrorBoundary } from 'react-error-boundary';
 import { twMerge } from 'tailwind-merge';
 
 export function isDeepEqual(obj1: any, obj2: any) {
@@ -24,4 +25,17 @@ export function isDeepEqual(obj1: any, obj2: any) {
 
 export function cn(...args: ClassValue[]): string {
   return twMerge(clsx(args));
+}
+
+export function useShowBoundary() {
+  const { showBoundary: defaultShowBoundary } = useErrorBoundary();
+  return {
+    showBoundary: (error: any) => {
+      if (error instanceof Error) {
+        defaultShowBoundary(error);
+      } else {
+        defaultShowBoundary(new Error(JSON.stringify(error)));
+      }
+    },
+  };
 }

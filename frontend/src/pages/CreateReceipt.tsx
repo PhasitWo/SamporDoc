@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router';
 import InputContainer from '../components/InputContainer';
 import { useAppStore } from '../store/useAppStore';
 import Asterisk from '../components/Asterisk';
-import { useShowBoundary } from '../utils';
+import { isValidWindowsFilename, useShowBoundary } from '../utils';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
@@ -87,7 +87,7 @@ export default function CreateReceiptPage() {
   };
 
   const readyToCreate = useMemo<boolean>(() => {
-    if (selectedShop == null || selectedShop.receiptFormPath == undefined || selectedShop.receiptControlPath == undefined) {
+    if (selectedShop == null || !selectedShop.receiptFormPath || !selectedShop.receiptControlPath) {
       return false;
     }
     if (data.amount <= 0) {
@@ -123,7 +123,8 @@ export default function CreateReceiptPage() {
         data.saveDir === '' ||
         data.receiptNO === '' ||
         data.amount <= 0 ||
-        data.customerName.trim() === ''
+        data.customerName.trim() === '' ||
+        data.detail.trim() === ''
       ) {
         return;
       }
@@ -139,7 +140,7 @@ export default function CreateReceiptPage() {
         ControlPath: selectedShop.receiptControlPath,
         Address: data.address.trim() || undefined,
         DeliveryNO: data.deliveryNO.trim() || undefined,
-        Detail: data.detail.trim() || undefined,
+        Detail: data.detail.trim(),
         DeliveryDate: data.deliveryDate?.toISOString(),
         ReceiptDate: data.receiptDate?.toISOString(),
       });
@@ -159,7 +160,14 @@ export default function CreateReceiptPage() {
           ชื่อไฟล์
           <Asterisk />
         </label>
-        <Input onChange={(e) => setData({ ...data, filename: e.target.value })} />
+        <Input
+          value={data.filename}
+          onChange={(e) => {
+            if (isValidWindowsFilename(e.target.value)) {
+              setData({ ...data, filename: e.target.value });
+            }
+          }}
+        />
       </InputContainer>
       <InputContainer>
         <label>
@@ -195,8 +203,8 @@ export default function CreateReceiptPage() {
         />
         <ErrorAlertCard
           messages={[
-            selectedShop && !selectedShop.receiptFormPath && 'ขาดไฟล์ต้นแบบ',
-            selectedShop && selectedShop.receiptControlPath === null && 'ขาดไฟล์สมุดคุม',
+            selectedShop && !selectedShop.receiptFormPath && 'ขาดไฟล์ต้นแบบใบเสร็จรับเงิน',
+            selectedShop && !selectedShop.receiptControlPath && 'ขาดไฟล์สมุดคุมใบเสร็จรับเงิน',
           ]}
           action={
             <Button danger ghost onClick={() => navigate(`/setting?shopSlug=${selectedShop?.slug}`)}>

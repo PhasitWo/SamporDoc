@@ -39,3 +39,23 @@ export function useShowBoundary() {
     },
   };
 }
+
+export const isValidWindowsFilename = (filename: string): boolean => {
+  // 1. Check for reserved characters: < > : " / \ | ? *
+  // 2. Check for control characters (0-31)
+  const reservedChars = /[<>:"/\\|?*\x00-\x1f]/;
+
+  // 3. Check for reserved names (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+  // These are case-insensitive and cannot be the full filename or the base name before an extension
+  const reservedNames = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
+
+  // 4. Check for trailing spaces or periods (not allowed in Windows)
+  const trailingDotsOrSpaces = /[.]$/;
+
+  if (filename.length > 255) return false;
+  if (reservedChars.test(filename)) return false;
+  if (reservedNames.test(filename)) return false;
+  if (trailingDotsOrSpaces.test(filename)) return false;
+
+  return true;
+};

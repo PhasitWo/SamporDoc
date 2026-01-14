@@ -6,6 +6,10 @@ export function CMDOpenFile(arg1) {
   return window['go']['main']['App']['CMDOpenFile'](arg1);
 }
 
+export function CreateProcurement(arg1) {
+  return window['go']['main']['App']['CreateProcurement'](arg1);
+}
+
 export function CreateReceipt(arg1) {
   return window['go']['main']['App']['CreateReceipt'](arg1);
 }

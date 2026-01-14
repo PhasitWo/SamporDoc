@@ -1,4 +1,4 @@
-import { Input, Button, Select, App } from 'antd';
+import { Input, Button, Select, App, Divider } from 'antd';
 import { model } from '../../wailsjs/go/models';
 import { UpdateShopBySlug, OpenExcelFileDialog } from '../../wailsjs/go/main/App';
 import InputContainer from '../components/InputContainer';
@@ -19,7 +19,7 @@ export default function Setting() {
     () => shops.map<ShopOptionType>((s) => ({ value: s.slug, label: s.name, meta: s })),
     [shops]
   );
-  
+
   const [searchParams] = useSearchParams();
   const shopSlug = searchParams.get('shopSlug');
   useEffect(() => {
@@ -109,6 +109,60 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
               OpenExcelFileDialog().then((path) => {
                 if (path !== '') {
                   setShop({ ...shop, receiptControlPath: path });
+                }
+              });
+            }}
+          >
+            เลือก
+          </Button>
+        </div>
+      </InputContainer>
+      <Divider/>
+      <div className="font-bold text-2xl mb-3">จัดซื้อจัดจ้าง</div>
+      <InputContainer>
+        <label>ไฟล์ต้นแบบจัดซื้อจัดจ้างไม่เกิน 11 รายการ</label>
+        <div className="flex gap-1">
+          <Input readOnly value={shop.procurementLTEFormPath ?? ''} />
+          <Button
+            type="default"
+            onClick={async () => {
+              const path = await OpenExcelFileDialog();
+              if (path !== '') {
+                setShop({ ...shop, procurementLTEFormPath: path });
+              }
+            }}
+          >
+            เลือก
+          </Button>
+        </div>
+      </InputContainer>
+      <InputContainer>
+        <label>ไฟล์ต้นแบบจัดซื้อจัดจ้างเกิน 11 รายการ</label>
+        <div className="flex gap-1">
+          <Input readOnly value={shop.procurementGTFormPath ?? ''} />
+          <Button
+            type="default"
+            onClick={async () => {
+              const path = await OpenExcelFileDialog();
+              if (path !== '') {
+                setShop({ ...shop, procurementGTFormPath: path });
+              }
+            }}
+          >
+            เลือก
+          </Button>
+        </div>
+      </InputContainer>
+      <InputContainer>
+        <label>ไฟล์สมุดคุมใบส่งของ</label>
+        <div className="flex gap-1">
+          <Input readOnly value={shop.procurementControlPath ?? ''} />
+          <Button
+            type="default"
+            onClick={async () => {
+              OpenExcelFileDialog().then((path) => {
+                if (path !== '') {
+                  setShop({ ...shop, procurementControlPath: path });
                 }
               });
             }}

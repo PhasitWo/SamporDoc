@@ -1,7 +1,7 @@
 import { Input, Button, AutoComplete, Select, DatePicker, App, Divider, Radio } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
-import { main, model } from '../../wailsjs/go/models';
-import { GetNextControlNumber, OpenDirectoryDialog, CreateReceipt } from '../../wailsjs/go/main/App';
+import { model } from '../../wailsjs/go/models';
+import { GetNextControlNumber, OpenDirectoryDialog, CreateProcurement } from '../../wailsjs/go/main/App';
 import type { DefaultOptionType } from 'antd/es/select';
 import { Dayjs } from 'dayjs';
 import ErrorAlertCard from '../components/ErrorAlertCard';
@@ -9,8 +9,7 @@ import { useNavigate } from 'react-router';
 import InputContainer from '../components/InputContainer';
 import { useAppStore } from '../store/useAppStore';
 import Asterisk from '../components/Asterisk';
-import { useShowBoundary } from '../utils';
-import type { CheckboxGroupProps } from 'antd/es/checkbox';
+import { isValidWindowsFilename, useShowBoundary } from '../utils';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
@@ -20,18 +19,33 @@ interface CustomerOptionType extends DefaultOptionType {
   meta: model.Customer;
 }
 
+type ProcurementOutputType = 'FULL' | 'ONLY_DELIVERY_NOTE' | 'ONLY_QUOTATION';
+
+interface ProcurementOutputTypeOptionType extends DefaultOptionType {
+  value: ProcurementOutputType;
+}
+
 interface FormData {
   filename: string;
   saveDir: string;
-  receiptNO: string;
-  receiptDate: Dayjs | null;
-  customerName: string;
-  address: string;
-  detail: string;
   deliveryNO: string;
   deliveryDate: Dayjs | null;
+  buy: string;
+  project: string;
   amount: number;
+  quantity: number;
+  procurementOutputType: ProcurementOutputType;
+  customerName: string;
+  address: string;
+  headCheckerName: string;
+  checker1Name: string;
+  checker2Name: string;
+  objectName: string;
+  headObjectName: string;
+  bossName: string;
 }
+
+type QuantityType = 'LTE' | 'GT' | 'CUSTOM';
 
 export default function CreateProcurementPage() {
   const navigate = useNavigate();
@@ -41,15 +55,23 @@ export default function CreateProcurementPage() {
   const [data, setData] = useState<FormData>({
     filename: '',
     saveDir: '',
-    receiptNO: '',
-    receiptDate: null,
-    customerName: '',
-    address: '',
-    detail: '',
     deliveryNO: '',
     deliveryDate: null,
+    customerName: '',
+    address: '',
+    buy: '',
+    project: '',
     amount: 0,
+    quantity: 0,
+    procurementOutputType: 'FULL',
+    headCheckerName: '',
+    checker1Name: '',
+    checker2Name: '',
+    objectName: '',
+    headObjectName: '',
+    bossName: '',
   });
+  const [quantityType, setQuantityType] = useState<QuantityType>('LTE');
 
   // shop
   const [selectedShop, setSelectedShop] = useState<model.Shop | null>(null);
@@ -61,10 +83,10 @@ export default function CreateProcurementPage() {
 
   useEffect(() => {
     (async () => {
-      setData({ ...data, receiptNO: '' });
-      if (selectedShop && selectedShop.receiptControlPath) {
-        const nextNumber = await GetNextControlNumber(selectedShop.receiptControlPath);
-        setData({ ...data, receiptNO: String(nextNumber) });
+      setData({ ...data, deliveryNO: '' });
+      if (selectedShop && selectedShop.procurementControlPath) {
+        const nextNumber = await GetNextControlNumber(selectedShop.procurementControlPath);
+        setData({ ...data, deliveryNO: String(nextNumber) });
       }
     })();
   }, [selectedShop]);
@@ -80,21 +102,52 @@ export default function CreateProcurementPage() {
   const handleCustomerChange = (value: string, option?: CustomerOptionType | CustomerOptionType[]) => {
     if (option && 'meta' in option && !Array.isArray(option)) {
       setSelectedCustomer(option.meta);
-      setData({ ...data, customerName: option.meta.name, address: option.meta.address ?? '' });
+      setData({
+        ...data,
+        customerName: option.meta.name,
+        address: option.meta.address ?? '',
+        headCheckerName: option.meta.headCheckerName ?? '',
+        checker1Name: option.meta.checker1Name ?? '',
+        checker2Name: option.meta.checker2Name ?? '',
+        objectName: option.meta.objectName ?? '',
+        headObjectName: option.meta.headObjectName ?? '',
+        bossName: option.meta.bossName ?? '',
+      });
     } else {
       setSelectedCustomer(null);
-      setData({ ...data, customerName: value, address: '' });
+      setData({
+        ...data,
+        customerName: value,
+        address: '',
+        headCheckerName: '',
+        checker1Name: '',
+        checker2Name: '',
+        objectName: '',
+        headObjectName: '',
+        bossName: '',
+      });
     }
   };
 
   const readyToCreate = useMemo<boolean>(() => {
-    if (selectedShop == null || selectedShop.receiptFormPath == undefined || selectedShop.receiptControlPath == undefined) {
+    if (
+      selectedShop == null ||
+      !selectedShop.procurementLTEFormPath ||
+      !selectedShop.procurementGTFormPath ||
+      !selectedShop.procurementControlPath
+    ) {
       return false;
     }
     if (data.amount <= 0) {
       return false;
     }
-    if (data.filename.trim() === '' || data.saveDir === '' || data.receiptNO.trim() === '' || data.customerName.trim() === '') {
+    if (
+      data.filename.trim() === '' ||
+      data.saveDir === '' ||
+      data.deliveryNO.trim() === '' ||
+      data.customerName.trim() === '' ||
+      data.buy.trim() === ''
+    ) {
       return false;
     }
     return true;
@@ -112,40 +165,61 @@ export default function CreateProcurementPage() {
     try {
       if (
         !selectedShop ||
-        !selectedShop.receiptFormPath ||
-        !selectedShop.receiptControlPath ||
+        !selectedShop.procurementLTEFormPath ||
+        !selectedShop.procurementGTFormPath ||
+        !selectedShop.procurementControlPath ||
         data.filename.trim() === '' ||
         data.saveDir === '' ||
-        data.receiptNO === '' ||
+        data.deliveryNO === '' ||
         data.amount <= 0 ||
-        data.customerName.trim() === ''
+        data.customerName.trim() === '' ||
+        data.buy === ''
       ) {
         return;
       }
-      message.loading('สร้างไฟล์ใบเสร็จรับเงิน...');
-      await CreateReceipt({
-        TemplatePath: selectedShop.receiptFormPath,
+      const qty = quantityType === 'CUSTOM' ? data.quantity : undefined;
+      let template: string;
+      switch (quantityType) {
+        case 'CUSTOM':
+          template = data.quantity <= 11 ? selectedShop.procurementLTEFormPath : selectedShop.procurementGTFormPath;
+          break;
+        case 'LTE':
+          template = selectedShop.procurementLTEFormPath;
+        case 'GT':
+          template = selectedShop.procurementGTFormPath;
+      }
+
+      message.loading('สร้างไฟล์จัดซื้อจัดจ้าง...');
+      await CreateProcurement({
+        TemplatePath: template,
+        ControlPath: selectedShop.procurementControlPath,
         Filename: data.filename.trim(),
         OutputDir: data.saveDir,
-        ReceiptNO: data.receiptNO,
-        CustomerName: data.customerName.trim(),
-        Amount: data.amount,
-        ControlPath: selectedShop.receiptControlPath,
-        Address: data.address.trim() || undefined,
-        DeliveryNO: data.deliveryNO.trim() || undefined,
-        Detail: data.detail.trim() || undefined,
+        DeliveryNO: data.deliveryNO.trim(),
         DeliveryDate: data.deliveryDate?.toISOString(),
-        ReceiptDate: data.receiptDate?.toISOString(),
+        Buy: data.buy.trim(),
+        Project: data.project.trim() || undefined,
+        Amount: data.amount,
+        ProcurementOutputType: data.procurementOutputType,
+        Quantity: qty,
+        CustomerName: data.customerName.trim(),
+        CustomerID: selectedCustomer?.ID,
+        Address: data.address.trim() || undefined,
+        HeadCheckerName: data.headCheckerName.trim() || undefined,
+        Checker1Name: data.checker1Name.trim() || undefined,
+        Checker2Name: data.checker2Name.trim() || undefined,
+        HeadObjectName: data.headObjectName.trim() || undefined,
+        ObjectName: data.objectName.trim() || undefined,
+        BossName: data.bossName.trim() || undefined,
       });
       message.destroy();
-      message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!');
+      message.success('สร้างไฟล์จัดซื้อจัดจ้างสำเร็จ!');
       // refetch
       useAppStore.getState().fetchCustomers();
     } catch (err: any) {
       showBoundary(err);
     }
   };
-
   return (
     <div className="mx-auto flex flex-col gap-3 items-center justify-center max-w-[500px]">
       <InputContainer>
@@ -153,7 +227,14 @@ export default function CreateProcurementPage() {
           ชื่อไฟล์
           <Asterisk />
         </label>
-        <Input onChange={(e) => setData({ ...data, filename: e.target.value })} />
+        <Input
+          value={data.filename}
+          onChange={(e) => {
+            if (isValidWindowsFilename(e.target.value)) {
+              setData({ ...data, filename: e.target.value });
+            }
+          }}
+        />
       </InputContainer>
       <InputContainer>
         <label>
@@ -189,8 +270,9 @@ export default function CreateProcurementPage() {
         />
         <ErrorAlertCard
           messages={[
-            selectedShop && !selectedShop.receiptFormPath && 'ขาดไฟล์ต้นแบบ',
-            selectedShop && selectedShop.receiptControlPath === null && 'ขาดไฟล์สมุดคุม',
+            selectedShop && !selectedShop.procurementLTEFormPath && 'ขาดไฟล์ต้นแบบไม่เกิน 11 รายการ',
+            selectedShop && !selectedShop.procurementGTFormPath && 'ขาดไฟล์ต้นแบบเกิน 11 รายการ',
+            selectedShop && !selectedShop.procurementControlPath && 'ขาดไฟล์สมุดคุมใบส่งของ',
           ]}
           action={
             <Button danger ghost onClick={() => navigate(`/setting?shopSlug=${selectedShop?.slug}`)}>
@@ -201,8 +283,8 @@ export default function CreateProcurementPage() {
       </InputContainer>
       <div className="flex flex-row w-[500px] gap-2">
         <InputContainer>
-          <label>ใบส่งของเลขที่</label>
-          <Input onChange={(e) => setData({ ...data, deliveryNO: e.target.value })} />
+          <label>เลขที่ใบส่งของ</label>
+          <Input readOnly value={data.deliveryNO} />
         </InputContainer>
         <InputContainer>
           <label>ใบส่งของลงวันที่</label>
@@ -222,12 +304,12 @@ export default function CreateProcurementPage() {
             { value: 'หนังสือเรียน' },
             { value: 'อื่นๆ โปรดระบุ', disabled: true },
           ]}
-          onChange={(v) => setData({ ...data, detail: v })}
+          onChange={(v) => setData({ ...data, buy: v })}
         />
       </InputContainer>
       <InputContainer>
         <label>โครงการ</label>
-        <Input />
+        <Input value={data.project} onChange={(e) => setData({ ...data, project: e.target.value })} />
       </InputContainer>
       <InputContainer>
         <label>
@@ -247,24 +329,45 @@ export default function CreateProcurementPage() {
         <Radio.Group
           vertical
           options={[
-            { value: 'lte', label: 'น้อยกว่าหรือเท่ากับ 11 รายการ' },
-            { value: 'gt', label: 'มากกว่า 11 รายการ' },
+            { value: 'LTE', label: 'ไม่เกิน 11 รายการ' },
+            { value: 'GT', label: 'มากกว่า 11 รายการ' },
             {
-              value: 'custom',
-              label: <Input placeholder="ระบุจำนวน" type="number" min={0} />,
+              value: 'CUSTOM',
+              label:
+                quantityType === 'CUSTOM' ? (
+                  <Input
+                    placeholder="ระบุจำนวน"
+                    type="number"
+                    min={0}
+                    value={data.quantity}
+                    onChange={(e) => setData({ ...data, quantity: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber })}
+                  />
+                ) : (
+                  'ระบุจำนวน'
+                ),
             },
           ]}
-          defaultValue="lte"
+          defaultValue="LTE"
+          value={quantityType}
+          onChange={(e) => {
+            setQuantityType(e.target.value);
+          }}
         />
       </InputContainer>
       <InputContainer>
         <label>รูปแบบ</label>
-        <Select<string, DefaultOptionType>
+        <Select<string, ProcurementOutputTypeOptionType>
           options={[
-            { value: 'full', label: 'ฉบับเต็ม' },
-            { value: 'only_delivery_note', label: 'เฉพาะใบส่งของ' },
-            { value: 'only_quotation', label: 'เฉพาะใบเสนอราคา' },
+            { value: 'FULL', label: 'ฉบับเต็ม' },
+            { value: 'ONLY_DELIVERY_NOTE', label: 'เฉพาะใบส่งของ' },
+            { value: 'ONLY_QUOTATION', label: 'เฉพาะใบเสนอราคา' },
           ]}
+          value={data.procurementOutputType}
+          onChange={(_, option) => {
+            if (option && !Array.isArray(option)) {
+              setData({ ...data, procurementOutputType: option.value });
+            }
+          }}
         />
       </InputContainer>
       <Divider />
@@ -290,29 +393,28 @@ export default function CreateProcurementPage() {
       </InputContainer>
       <InputContainer>
         <label>ประธานกรรมการ</label>
-        <Input />
+        <Input value={data.headCheckerName} onChange={(e) => setData({ ...data, headCheckerName: e.target.value })} />
       </InputContainer>
       <InputContainer>
         <label>กรรมการ1</label>
-        <Input />
+        <Input value={data.checker1Name} onChange={(e) => setData({ ...data, checker1Name: e.target.value })} />
       </InputContainer>
       <InputContainer>
         <label>กรรมการ2</label>
-        <Input />
+        <Input value={data.checker2Name} onChange={(e) => setData({ ...data, checker2Name: e.target.value })} />
       </InputContainer>
       <InputContainer>
         <label>เจ้าหน้าที่พัสดุ</label>
-        <Input />
+        <Input value={data.objectName} onChange={(e) => setData({ ...data, objectName: e.target.value })} />
       </InputContainer>
       <InputContainer>
         <label>หัวหน้าเจ้าหน้าที่</label>
-        <Input />
+        <Input value={data.headObjectName} onChange={(e) => setData({ ...data, headObjectName: e.target.value })} />
       </InputContainer>
       <InputContainer>
         <label>ผู้อำนวยการ</label>
-        <Input />
+        <Input value={data.bossName} onChange={(e) => setData({ ...data, bossName: e.target.value })} />
       </InputContainer>
-
       <Button className="mt-3 w-full  mb-5" type="primary" disabled={!readyToCreate} onClick={handleSubmit}>
         สร้างจัดซื้อจัดจ้าง
       </Button>

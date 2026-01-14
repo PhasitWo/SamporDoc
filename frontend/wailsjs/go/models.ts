@@ -1,5 +1,55 @@
 export namespace main {
 	
+	export class CreateProcurementParams {
+	    TemplatePath: string;
+	    ControlPath: string;
+	    Filename: string;
+	    OutputDir: string;
+	    DeliveryNO: string;
+	    DeliveryDate?: string;
+	    Buy: string;
+	    Project?: string;
+	    Amount: number;
+	    ProcurementOutputType: string;
+	    Quantity?: number;
+	    CustomerName: string;
+	    CustomerID?: number;
+	    Address?: string;
+	    HeadCheckerName?: string;
+	    Checker1Name?: string;
+	    Checker2Name?: string;
+	    ObjectName?: string;
+	    HeadObjectName?: string;
+	    BossName?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateProcurementParams(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.TemplatePath = source["TemplatePath"];
+	        this.ControlPath = source["ControlPath"];
+	        this.Filename = source["Filename"];
+	        this.OutputDir = source["OutputDir"];
+	        this.DeliveryNO = source["DeliveryNO"];
+	        this.DeliveryDate = source["DeliveryDate"];
+	        this.Buy = source["Buy"];
+	        this.Project = source["Project"];
+	        this.Amount = source["Amount"];
+	        this.ProcurementOutputType = source["ProcurementOutputType"];
+	        this.Quantity = source["Quantity"];
+	        this.CustomerName = source["CustomerName"];
+	        this.CustomerID = source["CustomerID"];
+	        this.Address = source["Address"];
+	        this.HeadCheckerName = source["HeadCheckerName"];
+	        this.Checker1Name = source["Checker1Name"];
+	        this.Checker2Name = source["Checker2Name"];
+	        this.ObjectName = source["ObjectName"];
+	        this.HeadObjectName = source["HeadObjectName"];
+	        this.BossName = source["BossName"];
+	    }
+	}
 	export class CreateReceiptParams {
 	    TemplatePath: string;
 	    ControlPath: string;
@@ -10,7 +60,7 @@ export namespace main {
 	    CustomerName: string;
 	    CustomerID?: number;
 	    Address?: string;
-	    Detail?: string;
+	    Detail: string;
 	    DeliveryNO?: string;
 	    DeliveryDate?: string;
 	    Amount: number;
@@ -76,6 +126,9 @@ export namespace model {
 	    sortingLevel: number;
 	    receiptFormPath?: string | null;
 	    receiptControlPath?: string | null;
+	    procurementLTEFormPath?: string | null;
+	    procurementGTFormPath?: string | null;
+	    procurementControlPath?: string | null;
 	
 	    static createFrom(source: any = {}) {
 	        return new Shop(source);
@@ -89,6 +142,9 @@ export namespace model {
 	        this.sortingLevel = source["sortingLevel"];
 	        this.receiptFormPath = source["receiptFormPath"];
 	        this.receiptControlPath = source["receiptControlPath"];
+	        this.procurementLTEFormPath = source["procurementLTEFormPath"];
+	        this.procurementGTFormPath = source["procurementGTFormPath"];
+	        this.procurementControlPath = source["procurementControlPath"];
 	    }
 	}
 

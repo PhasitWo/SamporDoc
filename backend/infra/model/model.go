@@ -19,12 +19,15 @@ type Customer struct {
 }
 
 type Shop struct {
-	ID                 uint64  `gorm:"primaryKey;autoIncrement"`
-	Slug               string  `gorm:"uniqueIndex" json:"slug"`
-	Name               string  `json:"name"`
-	SortingLevel       uint64  `json:"sortingLevel"`
-	ReceiptFormPath    *string `json:"receiptFormPath" ts_type:"string | null"`
-	ReceiptControlPath *string `json:"receiptControlPath" ts_type:"string | null"`
+	ID                     uint64  `gorm:"primaryKey;autoIncrement"`
+	Slug                   string  `gorm:"uniqueIndex" json:"slug"`
+	Name                   string  `json:"name"`
+	SortingLevel           uint64  `json:"sortingLevel"`
+	ReceiptFormPath        *string `json:"receiptFormPath" ts_type:"string | null"`
+	ReceiptControlPath     *string `json:"receiptControlPath" ts_type:"string | null"`
+	ProcurementLTEFormPath *string `json:"procurementLTEFormPath" ts_type:"string | null"`
+	ProcurementGTFormPath  *string `json:"procurementGTFormPath" ts_type:"string | null"`
+	ProcurementControlPath *string `json:"procurementControlPath" ts_type:"string | null"`
 }
 
 type Log struct {

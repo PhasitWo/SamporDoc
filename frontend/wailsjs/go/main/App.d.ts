@@ -5,6 +5,8 @@ import {model} from '../models';
 
 export function CMDOpenFile(arg1:string):Promise<void>;
 
+export function CreateProcurement(arg1:main.CreateProcurementParams):Promise<void>;
+
 export function CreateReceipt(arg1:main.CreateReceiptParams):Promise<void>;
 
 export function GetAllCustomers():Promise<Array<model.Customer>>;

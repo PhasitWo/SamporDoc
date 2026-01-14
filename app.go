@@ -315,6 +315,7 @@ func (p ProcurementData) toExcelKeyValue() map[string]string {
 		"HEADCHECKER":    headCheckerName,
 		"CHECKER1":       checker1Name,
 		"CHECKER2":       checker2Name,
+		"_OBJECT":        objectName,
 		"OBJECT":         objectName,
 		"HEADOBJECT":     headObjectName,
 		"BOSS":           bossName,

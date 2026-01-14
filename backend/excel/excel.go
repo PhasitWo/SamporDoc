@@ -2,10 +2,11 @@ package excel
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
-	"slices"
 
 	"github.com/xuri/excelize/v2"
 )
@@ -25,27 +26,37 @@ func CreateExcelFile(templatePath string, data map[string]string) (*excelize.Fil
 		}
 	}()
 	sheetList := f.GetSheetList()
+	sortedKeys := slices.SortedFunc(maps.Keys(data), func(a, b string) int {
+		if len(b) != len(a) {
+			return len(b) - len(a)
+		}
+		return strings.Compare(a, b) // Alphabetical if lengths are equal
+	})
 	for _, activeSheetName := range sheetList {
 		rows, err := f.GetRows(activeSheetName)
 		if err != nil {
 			return nil, newError(err)
 		}
-		for range 3 {
-			for ridx, row := range rows {
-				for cidx, cell := range row {
-					coordinate, _ := excelize.CoordinatesToCellName(cidx+1, ridx+1)
-					for key, replacement := range data {
-						if strings.Contains(cell, key) {
-							newValue := strings.ReplaceAll(cell, key, replacement)
-							if numeric, err := strconv.ParseFloat(newValue, 64); err == nil {
-								f.SetCellValue(activeSheetName, coordinate, numeric)
-							} else {
-								f.SetCellValue(activeSheetName, coordinate, newValue)
-							}
-
-						}
+		for ridx, row := range rows {
+			for cidx, cell := range row {
+				coordinate, _ := excelize.CoordinatesToCellName(cidx+1, ridx+1)
+				newValue := cell
+				replaced := false
+				for _, key := range sortedKeys {
+					replacement := data[key]
+					if strings.Contains(newValue, key) {
+						replaced = true
+						newValue = strings.ReplaceAll(newValue, key, replacement)
 					}
 				}
+				if replaced {
+					if numeric, err := strconv.ParseFloat(newValue, 64); err == nil {
+						f.SetCellValue(activeSheetName, coordinate, numeric)
+					} else {
+						f.SetCellValue(activeSheetName, coordinate, newValue)
+					}
+				}
+
 			}
 		}
 	}
@@ -119,14 +130,20 @@ func WriteControlFile(controlFilePath string, data ControlData) (*excelize.File,
 	return f, nil
 }
 
-func ShowOnlySheetNames(f *excelize.File, sheetNames... string) (*excelize.File, error) {
+func ShowOnlySheetNames(f *excelize.File, sheetNames ...string) (*excelize.File, error) {
 	for _, name := range f.GetSheetList() {
 		if slices.Contains(sheetNames, name) {
-			continue // skip
+			idx, _ := f.GetSheetIndex(name)
+			f.SetActiveSheet(idx)
+			break
 		}
-		err := f.SetSheetVisible(name, false)
-		if err != nil {
-			return nil, err
+	}
+	for _, name := range f.GetSheetList() {
+		if !slices.Contains(sheetNames, name) {
+			err := f.SetSheetVisible(name, false)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return f, nil

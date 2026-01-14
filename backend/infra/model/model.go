@@ -36,5 +36,5 @@ type Log struct {
 	Status        string
 	Action        string
 	Data          datatypes.JSON
-	CorrelationID int64 `gorm:"index"`
+	CorrelationID *int64 `gorm:"index"`
 }

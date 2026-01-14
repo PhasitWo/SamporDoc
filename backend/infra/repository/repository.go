@@ -103,9 +103,10 @@ func (r *Repo) CreateLog(action string, status Status, correlationID *int64, dat
 	}
 	dataStr := string(bytes)
 	err = gorm.G[model.Log](r.DB).Create(r.ctx, &model.Log{
-		Action: action,
-		Status: string(status),
-		Data:   datatypes.JSON(dataStr),
+		Action:        action,
+		Status:        string(status),
+		Data:          datatypes.JSON(dataStr),
+		CorrelationID: correlationID,
 	})
 	return err
 }

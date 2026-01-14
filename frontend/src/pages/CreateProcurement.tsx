@@ -1,6 +1,7 @@
 import { Input, Button, AutoComplete, Select, DatePicker, App, Divider, Radio } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { model } from '../../wailsjs/go/models';
+import { WindowReload } from '../../wailsjs/runtime/runtime';
 import { GetNextControlNumber, OpenDirectoryDialog, CreateProcurement } from '../../wailsjs/go/main/App';
 import type { DefaultOptionType } from 'antd/es/select';
 import { Dayjs } from 'dayjs';
@@ -213,9 +214,9 @@ export default function CreateProcurementPage() {
         BossName: data.bossName.trim() || undefined,
       });
       message.destroy();
-      message.success('สร้างไฟล์จัดซื้อจัดจ้างสำเร็จ!');
-      // refetch
       useAppStore.getState().fetchCustomers();
+      message.success('สร้างไฟล์จัดซื้อจัดจ้างสำเร็จ!', 3, WindowReload);
+      // refetch
     } catch (err: any) {
       showBoundary(err);
     }

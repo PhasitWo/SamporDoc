@@ -10,6 +10,7 @@ import InputContainer from '../components/InputContainer';
 import { useAppStore } from '../store/useAppStore';
 import Asterisk from '../components/Asterisk';
 import { isValidWindowsFilename, useShowBoundary } from '../utils';
+import { WindowReload } from '../../wailsjs/runtime/runtime';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
@@ -145,9 +146,9 @@ export default function CreateReceiptPage() {
         ReceiptDate: data.receiptDate?.toISOString(),
       });
       message.destroy();
-      message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!');
-      // refetch
       useAppStore.getState().fetchCustomers();
+      message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!', 3, WindowReload);
+      // refetch
     } catch (err: any) {
       showBoundary(err);
     }

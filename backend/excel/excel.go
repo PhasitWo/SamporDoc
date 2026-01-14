@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"slices"
 
 	"github.com/xuri/excelize/v2"
 )
@@ -52,8 +53,9 @@ func CreateExcelFile(templatePath string, data map[string]string) (*excelize.Fil
 }
 
 type ControlData struct {
-	NO           string
+	NO           int
 	CustomerName string
+	Detail       string
 	Amount       float64
 	Date         *time.Time
 }
@@ -82,9 +84,9 @@ func WriteControlFile(controlFilePath string, data ControlData) (*excelize.File,
 	const startRow = 3
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
 	rows, err := f.Rows(activeSheetName)
-	// find last row
+	// find empty cell to insert
 	rowCoodinate := 0
-	prev := ""
+	hasGap := false
 	for rows.Next() {
 		rowCoodinate++
 		if rowCoodinate < startRow {
@@ -95,25 +97,42 @@ func WriteControlFile(controlFilePath string, data ControlData) (*excelize.File,
 			return nil, newError(err)
 		}
 		if len(row) == 0 || strings.TrimSpace(row[0]) == "" {
+			hasGap = true
 			break
 		}
-		prev = strings.TrimSpace(row[0])
+	}
+	var toInsertRowCoordinate int
+	if rowCoodinate < startRow {
+		toInsertRowCoordinate = startRow
+	} else if hasGap {
+		toInsertRowCoordinate = rowCoodinate
+	} else {
+		toInsertRowCoordinate = rowCoodinate + 1
 	}
 
-	if rowCoodinate < startRow || prev == "" {
-		f.SetCellValue(activeSheetName, getCellName(1, startRow), 1)
-		f.SetCellValue(activeSheetName, getCellName(2, startRow), data.CustomerName)
-		f.SetCellValue(activeSheetName, getCellName(3, startRow), data.Amount)
-		f.SetCellValue(activeSheetName, getCellName(4, startRow), date.Format("02-01-2006"))
-	} else {
-		f.SetCellValue(activeSheetName, getCellName(1, rowCoodinate), data.NO)
-		f.SetCellValue(activeSheetName, getCellName(2, rowCoodinate), data.CustomerName)
-		f.SetCellValue(activeSheetName, getCellName(3, rowCoodinate), data.Amount)
-		f.SetCellValue(activeSheetName, getCellName(4, rowCoodinate), date.Format("02-01-2006"))
+	f.SetCellValue(activeSheetName, getCellName(1, toInsertRowCoordinate), data.NO)
+	f.SetCellValue(activeSheetName, getCellName(2, toInsertRowCoordinate), data.CustomerName)
+	f.SetCellValue(activeSheetName, getCellName(3, toInsertRowCoordinate), data.Detail)
+	f.SetCellValue(activeSheetName, getCellName(4, toInsertRowCoordinate), data.Amount)
+	f.SetCellValue(activeSheetName, getCellName(5, toInsertRowCoordinate), date.Format("02-01-2006"))
+
+	return f, nil
+}
+
+func ShowOnlySheetNames(f *excelize.File, sheetNames... string) (*excelize.File, error) {
+	for _, name := range f.GetSheetList() {
+		if slices.Contains(sheetNames, name) {
+			continue // skip
+		}
+		err := f.SetSheetVisible(name, false)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return f, nil
 }
 
+// find maximun number regardless of gap
 func GetNextControlNumber(controlFilePath string) (int, error) {
 	f, err := excelize.OpenFile(controlFilePath)
 	if err != nil {
@@ -129,7 +148,7 @@ func GetNextControlNumber(controlFilePath string) (int, error) {
 	rows, err := f.Rows(activeSheetName)
 	// find last row
 	rowCoodinate := 0
-	prev := ""
+	maxNO := 0
 	for rows.Next() {
 		rowCoodinate++
 		if rowCoodinate < startRow {
@@ -140,16 +159,12 @@ func GetNextControlNumber(controlFilePath string) (int, error) {
 			return -1, newError(err)
 		}
 		if len(row) == 0 || strings.TrimSpace(row[0]) == "" {
-			break
+			continue
 		}
-		prev = strings.TrimSpace(row[0])
+		maxNO, err = strconv.Atoi(strings.TrimSpace(row[0]))
+		if err != nil {
+			return -1, newError(err)
+		}
 	}
-	if prev == "" {
-		return 1, nil
-	}
-	latestValue, err := strconv.Atoi(prev)
-	if err != nil {
-		return -1, newError(err)
-	}
-	return latestValue + 1, nil
+	return maxNO + 1, nil
 }

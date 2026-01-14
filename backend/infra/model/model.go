@@ -7,9 +7,15 @@ import (
 )
 
 type Customer struct {
-	ID      uint64  `gorm:"primaryKey;autoIncrement"`
-	Name    string  `gorm:"index" json:"name"`
-	Address *string `json:"address" ts_type:"string | null"`
+	ID              uint64  `gorm:"primaryKey;autoIncrement"`
+	Name            string  `gorm:"index" json:"name"`
+	Address         *string `json:"address" ts_type:"string | null"`
+	HeadCheckerName *string `json:"headCheckerName" ts_type:"string | null"`
+	Checker1Name    *string `json:"checker1Name" ts_type:"string | null"`
+	Checker2Name    *string `json:"checker2Name" ts_type:"string | null"`
+	ObjectName      *string `json:"objectName" ts_type:"string | null"`
+	HeadObjectName  *string `json:"headObjectName" ts_type:"string | null"`
+	BossName        *string `json:"bossName" ts_type:"string | null"`
 }
 
 type Shop struct {

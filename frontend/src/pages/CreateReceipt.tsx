@@ -72,7 +72,7 @@ export default function CreateReceiptPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<model.Customer | null>(null);
   const customers = useAppStore((s) => s.customers);
   const customerOptions = useMemo<CustomerOptionType[]>(
-    () => customers.map<CustomerOptionType>((c) => ({ value: c.name, label: c.name, meta: c })),
+    () => customers.map<CustomerOptionType>((c) => ({ value: c.ID, label: `${c.name} (ID: ${c.ID})`, meta: c })),
     [customers]
   );
 
@@ -93,7 +93,13 @@ export default function CreateReceiptPage() {
     if (data.amount <= 0) {
       return false;
     }
-    if (data.filename.trim() === '' || data.saveDir === '' || data.receiptNO.trim() === '' || data.customerName.trim() === '') {
+    if (
+      data.filename.trim() === '' ||
+      data.saveDir === '' ||
+      data.receiptNO.trim() === '' ||
+      data.customerName.trim() === '' ||
+      data.detail.trim() === ''
+    ) {
       return false;
     }
     return true;
@@ -128,6 +134,7 @@ export default function CreateReceiptPage() {
         OutputDir: data.saveDir,
         ReceiptNO: data.receiptNO,
         CustomerName: data.customerName.trim(),
+        CustomerID: selectedCustomer?.ID,
         Amount: data.amount,
         ControlPath: selectedShop.receiptControlPath,
         Address: data.address.trim() || undefined,
@@ -230,7 +237,10 @@ export default function CreateReceiptPage() {
         />
       </InputContainer>
       <InputContainer>
-        <label>รายละเอียดใบเสร็จ</label>
+        <label>
+          รายละเอียดใบเสร็จ
+          <Asterisk />
+        </label>
         <AutoComplete<string>
           allowClear
           options={[{ value: 'ค่าวัสดุสำนักงาน' }, { value: 'ค่าวัสดุการศึกษา' }, { value: 'อื่นๆ โปรดระบุ', disabled: true }]}

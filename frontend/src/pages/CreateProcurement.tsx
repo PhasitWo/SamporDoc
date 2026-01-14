@@ -73,7 +73,7 @@ export default function CreateProcurementPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<model.Customer | null>(null);
   const customers = useAppStore((s) => s.customers);
   const customerOptions = useMemo<CustomerOptionType[]>(
-    () => customers.map<CustomerOptionType>((c) => ({ value: c.name, label: c.name, meta: c })),
+    () => customers.map<CustomerOptionType>((c) => ({ value: c.ID, label: `${c.name} (ID: ${c.ID})`, meta: c })),
     [customers]
   );
 

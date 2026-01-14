@@ -48,6 +48,18 @@ func (r *Repo) CreateCustomer(customer *model.Customer) error {
 	return nil
 }
 
+func (r *Repo) UpdateCustomerByID(customer *model.Customer) (retCustomer model.Customer, err error) {
+	_, err = gorm.G[model.Customer](r.DB).Where("id = ?", customer.ID).Select("*").Updates(r.ctx, *customer)
+	if err != nil {
+		return retCustomer, r.newError(err)
+	}
+	retCustomer, err = gorm.G[model.Customer](r.DB).Where("id = ?", customer.ID).First(r.ctx)
+	if err != nil {
+		return retCustomer, r.newError(err)
+	}
+	return retCustomer, nil
+}
+
 func (r *Repo) GetAllShops() ([]model.Shop, error) {
 	var shops []model.Shop
 	shops, err := gorm.G[model.Shop](r.DB).Order("sorting_level asc").Find(r.ctx)

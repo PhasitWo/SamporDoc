@@ -8,5 +8,9 @@
   "author": {
     "name": "PhasitWo",
     "email": "wo.phasit@gmail.com"
+  },
+  "info": {
+    "productName": "SamporDoc",
+    "productVersion": "0.0.0"
   }
 }

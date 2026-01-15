@@ -7,7 +7,7 @@ on:
 jobs:
   release:
     runs-on: windows-latest
-    
+
     permissions:
       contents: write
       pull-requests: read
@@ -18,10 +18,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get Next Semantic Version
+        id: versioning
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: 'v'
+
+      - name: Generate Changelog Body
+        if: ${{ steps.versioning.outputs.previous_version != '0.0.0' }}
+        id: changelog
+        uses: dlavrenuek/conventional-changelog-action@v1.2.4
+        with:
+          version: ${{ steps.versioning.outputs.version }}
+          from: ${{ steps.versioning.outputs.previous_version }}
+          to: ${{ github.sha }}
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24.6' 
+          go-version: '1.24.6'
 
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
@@ -33,32 +48,27 @@ jobs:
           # Standard choco install path is C:\Program Files (x86)\NSIS
           echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
 
+      - name: Update wails.json version
+        shell: bash
+        run: |
+        NEW_VERSION="${{ steps.versioning.outputs.version }}"
+        # -r 'v' removes any leading 'v' if your tag is 'v1.0.0'
+        VERSION_CLEAN=$(echo $NEW_VERSION | sed 's/^v//')
+        
+        jq ".info.productVersion = \"$VERSION_CLEAN\"" wails.json > wails.json.tmp && mv wails.json.tmp wails.json
+        
+        echo "Updated wails.json to version: $VERSION_CLEAN"
+
       - name: Build Wails App & Installer
         shell: bash
         run: |
           # 1. Add Wails to PATH
           export PATH=$PATH:$(go env GOPATH)/bin
-          
+
           # 2. Run Build with -nsis
           #    -clean: Force clean build
           #    -nsis: Generate the Windows installer
-          wails build -clean -nsis -platform windows/amd64
-
-
-      - name: Get Next Semantic Version
-        id: versioning
-        uses: paulhatch/semantic-version@v5.4.0
-        with:
-          tag_prefix: "v"
-
-      - name: Generate Changelog Body
-        if: ${{ steps.versioning.outputs.previous_version != '0.0.0' }}
-        id: changelog
-        uses: dlavrenuek/conventional-changelog-action@v1.2.4
-        with:
-          version: ${{ steps.versioning.outputs.version }}
-          from: ${{ steps.versioning.outputs.previous_version }}
-          to: ${{ github.sha }}
+          wails build -ldflags "-X main.version=${{ steps.versioning.outputs.version || 'development' }}" -clean -nsis -platform windows/amd64
 
       - name: Create GitHub Release and Tag
         uses: softprops/action-gh-release@v1
@@ -69,6 +79,6 @@ jobs:
           tag_name: ${{ steps.versioning.outputs.version }}
           name: Release ${{ steps.versioning.outputs.version }}
           body: ${{ steps.changelog.outputs.body || 'Initial release' }}
-          
+
           files: |
             build/bin/*installer.exe

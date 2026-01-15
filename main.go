@@ -16,6 +16,8 @@ var assets embed.FS
 //go:embed build/appicon.png
 var icon []byte
 
+var version = "development"
+
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
@@ -32,7 +34,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:            "SamporDoc",
+		Title:            "SamporDoc " + version,
 		Width:            670,
 		Height:           850,
 		DisableResize:    true,

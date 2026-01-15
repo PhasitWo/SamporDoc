@@ -30,7 +30,7 @@ jobs:
         id: changelog
         uses: dlavrenuek/conventional-changelog-action@v1.2.4
         with:
-          from: ${{ steps.versioning.outputs.previous_version }}
+          from: v${{ steps.versioning.outputs.previous_version }}
           to: ${{ github.sha }}
 
       - name: Setup Go

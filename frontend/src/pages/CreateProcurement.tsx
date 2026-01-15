@@ -416,7 +416,7 @@ export default function CreateProcurementPage() {
         <label>ผู้อำนวยการ</label>
         <Input value={data.bossName} onChange={(e) => setData({ ...data, bossName: e.target.value })} />
       </InputContainer>
-      <Button className="mt-3 w-full  mb-5" type="primary" disabled={!readyToCreate} onClick={handleSubmit}>
+      <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate} onClick={handleSubmit}>
         สร้างจัดซื้อจัดจ้าง
       </Button>
     </div>

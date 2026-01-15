@@ -23,6 +23,7 @@ jobs:
         uses: paulhatch/semantic-version@v5.4.0
         with:
           tag_prefix: 'v'
+          major_pattern: "/!:|BREAKING CHANGE:/"
 
       - name: Generate Changelog Body
         if: ${{ steps.versioning.outputs.previous_version != '0.0.0' }}

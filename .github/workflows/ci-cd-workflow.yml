@@ -18,9 +18,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # -----------------------------------------------------------------
-      # 1. Setup Environment (Go + Wails + NSIS)
-      # -----------------------------------------------------------------
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -29,7 +26,6 @@ jobs:
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-      # 👇 NEW STEP: Install NSIS
       - name: Install NSIS
         run: |
           choco install nsis
@@ -37,18 +33,6 @@ jobs:
           # Standard choco install path is C:\Program Files (x86)\NSIS
           echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
 
-      # -----------------------------------------------------------------
-      # 2. Determine Semantic Version
-      # -----------------------------------------------------------------
-      - name: Get Next Semantic Version
-        id: versioning
-        uses: paulhatch/semantic-version@v5.4.0
-        with:
-          tag_prefix: "v"
-
-      # -----------------------------------------------------------------
-      # 3. Build Wails Project with NSIS
-      # -----------------------------------------------------------------
       - name: Build Wails App & Installer
         shell: bash
         run: |
@@ -60,10 +44,15 @@ jobs:
           #    -nsis: Generate the Windows installer
           wails build -clean -nsis -platform windows/amd64
 
-      # -----------------------------------------------------------------
-      # 4. Generate Release Notes
-      # -----------------------------------------------------------------
+
+      - name: Get Next Semantic Version
+        id: versioning
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+
       - name: Generate Changelog Body
+        if: ${{ steps.versioning.outputs.previous_version != '0.0.0' }}
         id: changelog
         uses: dlavrenuek/conventional-changelog-action@v1.2.4
         with:
@@ -71,9 +60,6 @@ jobs:
           from: ${{ steps.versioning.outputs.previous_version }}
           to: ${{ github.sha }}
 
-      # -----------------------------------------------------------------
-      # 5. Create Release and Upload Artifacts
-      # -----------------------------------------------------------------
       - name: Create GitHub Release and Tag
         uses: softprops/action-gh-release@v1
         if: ${{ steps.versioning.outputs.major || steps.versioning.outputs.minor || steps.versioning.outputs.patch }}
@@ -82,7 +68,7 @@ jobs:
         with:
           tag_name: ${{ steps.versioning.outputs.version }}
           name: Release ${{ steps.versioning.outputs.version }}
-          body: ${{ steps.changelog.outputs.body }}
+          body: ${{ steps.changelog.outputs.body || 'Initial release' }}
           
           files: |
             build/bin/*installer.exe

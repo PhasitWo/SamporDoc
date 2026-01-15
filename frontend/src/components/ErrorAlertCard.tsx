@@ -6,11 +6,14 @@ function ErrorAlertCard({
   title = 'เกิดข้อผิดพลาด',
   noTitle,
   ...rest
-}: Omit<AlertProps, 'description' | 'type'> & { messages?: Array<string | boolean | undefined | null>, noTitle?: boolean }) {
+}: Omit<AlertProps, 'description' | 'type'> & {
+  messages?: Array<string | boolean | undefined | null>;
+  noTitle?: boolean;
+}) {
   const node = useMemo<React.ReactNode | undefined | null>(() => {
     const arr = messages?.filter((v) => typeof v === 'string');
     if (arr?.length == 0) {
-      return null
+      return null;
     }
     return (
       <div>

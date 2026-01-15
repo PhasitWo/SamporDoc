@@ -1,16 +1,16 @@
-import { Input, Button, AutoComplete, Select, DatePicker, App, Divider, Radio } from "antd";
-import { useEffect, useMemo, useState } from "react";
-import { model } from "../../wailsjs/go/models";
-import { WindowReload } from "../../wailsjs/runtime/runtime";
-import { GetNextControlNumber, OpenDirectoryDialog, CreateProcurement } from "../../wailsjs/go/main/App";
-import type { DefaultOptionType } from "antd/es/select";
-import { Dayjs } from "dayjs";
-import ErrorAlertCard from "../components/ErrorAlertCard";
-import { useNavigate } from "react-router";
-import InputContainer from "../components/InputContainer";
-import { useAppStore } from "../store/useAppStore";
-import Asterisk from "../components/Asterisk";
-import { isValidWindowsFilename, useShowBoundary } from "../utils";
+import { Input, Button, AutoComplete, Select, DatePicker, App, Divider, Radio } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
+import { model } from '../../wailsjs/go/models';
+import { WindowReload } from '../../wailsjs/runtime/runtime';
+import { GetNextControlNumber, OpenDirectoryDialog, CreateProcurement } from '../../wailsjs/go/main/App';
+import type { DefaultOptionType } from 'antd/es/select';
+import { Dayjs } from 'dayjs';
+import ErrorAlertCard from '../components/ErrorAlertCard';
+import { useNavigate } from 'react-router';
+import InputContainer from '../components/InputContainer';
+import { useAppStore } from '../store/useAppStore';
+import Asterisk from '../components/Asterisk';
+import { isValidWindowsFilename, useShowBoundary } from '../utils';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
@@ -21,7 +21,7 @@ interface CustomerOptionType extends DefaultOptionType {
   value: number;
 }
 
-type ProcurementOutputType = "FULL" | "ONLY_DELIVERY_NOTE" | "ONLY_QUOTATION";
+type ProcurementOutputType = 'FULL' | 'ONLY_DELIVERY_NOTE' | 'ONLY_QUOTATION';
 
 interface ProcurementOutputTypeOptionType extends DefaultOptionType {
   value: ProcurementOutputType;
@@ -47,7 +47,7 @@ interface FormData {
   bossName: string;
 }
 
-type QuantityType = "LTE" | "GT" | "CUSTOM";
+type QuantityType = 'LTE' | 'GT' | 'CUSTOM';
 
 export default function CreateProcurementPage() {
   const navigate = useNavigate();
@@ -55,37 +55,42 @@ export default function CreateProcurementPage() {
   const { showBoundary } = useShowBoundary();
   // form
   const [data, setData] = useState<FormData>({
-    filename: "",
-    saveDir: "",
-    deliveryNO: "",
+    filename: '',
+    saveDir: '',
+    deliveryNO: '',
     deliveryDate: null,
-    customerName: "",
-    address: "",
-    buy: "",
-    project: "",
+    customerName: '',
+    address: '',
+    buy: '',
+    project: '',
     amount: 0,
     quantity: 0,
-    procurementOutputType: "FULL",
-    headCheckerName: "",
-    checker1Name: "",
-    checker2Name: "",
-    objectName: "",
-    headObjectName: "",
-    bossName: "",
+    procurementOutputType: 'FULL',
+    headCheckerName: '',
+    checker1Name: '',
+    checker2Name: '',
+    objectName: '',
+    headObjectName: '',
+    bossName: '',
   });
-  const [quantityType, setQuantityType] = useState<QuantityType>("LTE");
+  const [quantityType, setQuantityType] = useState<QuantityType>('LTE');
 
   // shop
   const [selectedShop, setSelectedShop] = useState<model.Shop | null>(null);
   const shops = useAppStore((s) => s.shops);
   const shopOptions = useMemo<ShopOptionType[]>(
-    () => shops.map<ShopOptionType>((s) => ({ value: s.slug, label: s.name, meta: s })),
+    () =>
+      shops.map<ShopOptionType>((s) => ({
+        value: s.slug,
+        label: s.name,
+        meta: s,
+      })),
     [shops]
   );
 
   useEffect(() => {
     (async () => {
-      setData({ ...data, deliveryNO: "" });
+      setData({ ...data, deliveryNO: '' });
       if (selectedShop && selectedShop.procurementControlPath) {
         const nextNumber = await GetNextControlNumber(selectedShop.procurementControlPath);
         setData({ ...data, deliveryNO: String(nextNumber) });
@@ -97,36 +102,41 @@ export default function CreateProcurementPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<model.Customer | null>(null);
   const customers = useAppStore((s) => s.customers);
   const customerOptions = useMemo<CustomerOptionType[]>(
-    () => customers.map<CustomerOptionType>((c) => ({ value: c.ID, label: `${c.name} (ID: ${c.ID})`, meta: c })),
+    () =>
+      customers.map<CustomerOptionType>((c) => ({
+        value: c.ID,
+        label: `${c.name} (ID: ${c.ID})`,
+        meta: c,
+      })),
     [customers]
   );
 
   const handleCustomerChange = (value: string, option?: CustomerOptionType | CustomerOptionType[]) => {
-    if (option && "meta" in option && !Array.isArray(option)) {
+    if (option && 'meta' in option && !Array.isArray(option)) {
       setSelectedCustomer(option.meta);
       setData({
         ...data,
         customerName: option.meta.name,
-        address: option.meta.address ?? "",
-        headCheckerName: option.meta.headCheckerName ?? "",
-        checker1Name: option.meta.checker1Name ?? "",
-        checker2Name: option.meta.checker2Name ?? "",
-        objectName: option.meta.objectName ?? "",
-        headObjectName: option.meta.headObjectName ?? "",
-        bossName: option.meta.bossName ?? "",
+        address: option.meta.address ?? '',
+        headCheckerName: option.meta.headCheckerName ?? '',
+        checker1Name: option.meta.checker1Name ?? '',
+        checker2Name: option.meta.checker2Name ?? '',
+        objectName: option.meta.objectName ?? '',
+        headObjectName: option.meta.headObjectName ?? '',
+        bossName: option.meta.bossName ?? '',
       });
     } else {
       setSelectedCustomer(null);
       setData({
         ...data,
         customerName: value,
-        address: "",
-        headCheckerName: "",
-        checker1Name: "",
-        checker2Name: "",
-        objectName: "",
-        headObjectName: "",
-        bossName: "",
+        address: '',
+        headCheckerName: '',
+        checker1Name: '',
+        checker2Name: '',
+        objectName: '',
+        headObjectName: '',
+        bossName: '',
       });
     }
   };
@@ -144,11 +154,11 @@ export default function CreateProcurementPage() {
       return false;
     }
     if (
-      data.filename.trim() === "" ||
-      data.saveDir === "" ||
-      data.deliveryNO.trim() === "" ||
-      data.customerName.trim() === "" ||
-      data.buy.trim() === ""
+      data.filename.trim() === '' ||
+      data.saveDir === '' ||
+      data.deliveryNO.trim() === '' ||
+      data.customerName.trim() === '' ||
+      data.buy.trim() === ''
     ) {
       return false;
     }
@@ -170,28 +180,28 @@ export default function CreateProcurementPage() {
         !selectedShop.procurementLTEFormPath ||
         !selectedShop.procurementGTFormPath ||
         !selectedShop.procurementControlPath ||
-        data.filename.trim() === "" ||
-        data.saveDir === "" ||
-        data.deliveryNO === "" ||
+        data.filename.trim() === '' ||
+        data.saveDir === '' ||
+        data.deliveryNO === '' ||
         data.amount <= 0 ||
-        data.customerName.trim() === "" ||
-        data.buy === ""
+        data.customerName.trim() === '' ||
+        data.buy === ''
       ) {
         return;
       }
-      const qty = quantityType === "CUSTOM" ? data.quantity : undefined;
+      const qty = quantityType === 'CUSTOM' ? data.quantity : undefined;
       let template: string;
       switch (quantityType) {
-        case "CUSTOM":
+        case 'CUSTOM':
           template = data.quantity <= 11 ? selectedShop.procurementLTEFormPath : selectedShop.procurementGTFormPath;
           break;
-        case "LTE":
+        case 'LTE':
           template = selectedShop.procurementLTEFormPath;
-        case "GT":
+        case 'GT':
           template = selectedShop.procurementGTFormPath;
       }
 
-      message.loading("สร้างไฟล์จัดซื้อจัดจ้าง...");
+      message.loading('สร้างไฟล์จัดซื้อจัดจ้าง...');
       await CreateProcurement({
         TemplatePath: template,
         ControlPath: selectedShop.procurementControlPath,
@@ -216,7 +226,7 @@ export default function CreateProcurementPage() {
       });
       message.destroy();
       useAppStore.getState().fetchCustomers();
-      message.success("สร้างไฟล์จัดซื้อจัดจ้างสำเร็จ!", 3, WindowReload);
+      message.success('สร้างไฟล์จัดซื้อจัดจ้างสำเร็จ!', 3, WindowReload);
       // refetch
     } catch (err: any) {
       showBoundary(err);
@@ -272,9 +282,9 @@ export default function CreateProcurementPage() {
         />
         <ErrorAlertCard
           messages={[
-            selectedShop && !selectedShop.procurementLTEFormPath && "ขาดไฟล์ต้นแบบไม่เกิน 11 รายการ",
-            selectedShop && !selectedShop.procurementGTFormPath && "ขาดไฟล์ต้นแบบเกิน 11 รายการ",
-            selectedShop && !selectedShop.procurementControlPath && "ขาดไฟล์สมุดคุมใบส่งของ",
+            selectedShop && !selectedShop.procurementLTEFormPath && 'ขาดไฟล์ต้นแบบไม่เกิน 11 รายการ',
+            selectedShop && !selectedShop.procurementGTFormPath && 'ขาดไฟล์ต้นแบบเกิน 11 รายการ',
+            selectedShop && !selectedShop.procurementControlPath && 'ขาดไฟล์สมุดคุมใบส่งของ',
           ]}
           action={
             <Button danger ghost onClick={() => navigate(`/setting?shopSlug=${selectedShop?.slug}`)}>
@@ -301,10 +311,10 @@ export default function CreateProcurementPage() {
         <AutoComplete<string>
           allowClear
           options={[
-            { value: "วัสดุสำนักงาน" },
-            { value: "วัสดุการศึกษา" },
-            { value: "หนังสือเรียน" },
-            { value: "อื่นๆ โปรดระบุ", disabled: true },
+            { value: 'วัสดุสำนักงาน' },
+            { value: 'วัสดุการศึกษา' },
+            { value: 'หนังสือเรียน' },
+            { value: 'อื่นๆ โปรดระบุ', disabled: true },
           ]}
           onChange={(v) => setData({ ...data, buy: v })}
         />
@@ -321,7 +331,12 @@ export default function CreateProcurementPage() {
         <Input
           type="number"
           value={data.amount}
-          onChange={(e) => setData({ ...data, amount: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber })}
+          onChange={(e) =>
+            setData({
+              ...data,
+              amount: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber,
+            })
+          }
           min={0}
         />
       </InputContainer>
@@ -331,21 +346,26 @@ export default function CreateProcurementPage() {
         <Radio.Group
           vertical
           options={[
-            { value: "LTE", label: "ไม่เกิน 11 รายการ" },
-            { value: "GT", label: "มากกว่า 11 รายการ" },
+            { value: 'LTE', label: 'ไม่เกิน 11 รายการ' },
+            { value: 'GT', label: 'มากกว่า 11 รายการ' },
             {
-              value: "CUSTOM",
+              value: 'CUSTOM',
               label:
-                quantityType === "CUSTOM" ? (
+                quantityType === 'CUSTOM' ? (
                   <Input
                     placeholder="ระบุจำนวน"
                     type="number"
                     min={0}
                     value={data.quantity}
-                    onChange={(e) => setData({ ...data, quantity: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber })}
+                    onChange={(e) =>
+                      setData({
+                        ...data,
+                        quantity: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber,
+                      })
+                    }
                   />
                 ) : (
-                  "ระบุจำนวน"
+                  'ระบุจำนวน'
                 ),
             },
           ]}
@@ -360,9 +380,9 @@ export default function CreateProcurementPage() {
         <label>รูปแบบ</label>
         <Select<string, ProcurementOutputTypeOptionType>
           options={[
-            { value: "FULL", label: "ฉบับเต็ม" },
-            { value: "ONLY_DELIVERY_NOTE", label: "เฉพาะใบส่งของ" },
-            { value: "ONLY_QUOTATION", label: "เฉพาะใบเสนอราคา" },
+            { value: 'FULL', label: 'ฉบับเต็ม' },
+            { value: 'ONLY_DELIVERY_NOTE', label: 'เฉพาะใบส่งของ' },
+            { value: 'ONLY_QUOTATION', label: 'เฉพาะใบเสนอราคา' },
           ]}
           value={data.procurementOutputType}
           onChange={(_, option) => {

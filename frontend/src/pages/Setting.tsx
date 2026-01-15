@@ -16,7 +16,12 @@ export default function Setting() {
   const [selectedShop, setSelectedShop] = useState<model.Shop | null>(null);
   const shops = useAppStore((s) => s.shops);
   const shopOptions = useMemo<ShopOptionType[]>(
-    () => shops.map<ShopOptionType>((s) => ({ value: s.slug, label: s.name, meta: s })),
+    () =>
+      shops.map<ShopOptionType>((s) => ({
+        value: s.slug,
+        label: s.name,
+        meta: s,
+      })),
     [shops]
   );
 
@@ -117,7 +122,7 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
           </Button>
         </div>
       </InputContainer>
-      <Divider/>
+      <Divider />
       <div className="font-bold text-2xl mb-3">จัดซื้อจัดจ้าง</div>
       <InputContainer>
         <label>ไฟล์ต้นแบบจัดซื้อจัดจ้างไม่เกิน 11 รายการ</label>

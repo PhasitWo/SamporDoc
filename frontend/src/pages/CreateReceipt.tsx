@@ -56,13 +56,18 @@ export default function CreateReceiptPage() {
   const [selectedShop, setSelectedShop] = useState<model.Shop | null>(null);
   const shops = useAppStore((s) => s.shops);
   const shopOptions = useMemo<ShopOptionType[]>(
-    () => shops.map<ShopOptionType>((s) => ({ value: s.slug, label: s.name, meta: s })),
+    () =>
+      shops.map<ShopOptionType>((s) => ({
+        value: s.slug,
+        label: s.name,
+        meta: s,
+      })),
     [shops]
   );
 
   useEffect(() => {
     (async () => {
-      setData({ ...data, receiptNO: "" });
+      setData({ ...data, receiptNO: '' });
       if (selectedShop && selectedShop.receiptControlPath) {
         const nextNumber = await GetNextControlNumber(selectedShop.receiptControlPath);
         setData({ ...data, receiptNO: String(nextNumber) });
@@ -74,17 +79,26 @@ export default function CreateReceiptPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<model.Customer | null>(null);
   const customers = useAppStore((s) => s.customers);
   const customerOptions = useMemo<CustomerOptionType[]>(
-    () => customers.map<CustomerOptionType>((c) => ({ value: c.ID, label: `${c.name} (ID: ${c.ID})`, meta: c })),
+    () =>
+      customers.map<CustomerOptionType>((c) => ({
+        value: c.ID,
+        label: `${c.name} (ID: ${c.ID})`,
+        meta: c,
+      })),
     [customers]
   );
 
   const handleCustomerChange = (value: string, option?: CustomerOptionType | CustomerOptionType[]) => {
-    if (option && "meta" in option && !Array.isArray(option)) {
+    if (option && 'meta' in option && !Array.isArray(option)) {
       setSelectedCustomer(option.meta);
-      setData({ ...data, customerName: option.meta.name, address: option.meta.address ?? "" });
+      setData({
+        ...data,
+        customerName: option.meta.name,
+        address: option.meta.address ?? '',
+      });
     } else {
       setSelectedCustomer(null);
-      setData({ ...data, customerName: value, address: "" });
+      setData({ ...data, customerName: value, address: '' });
     }
   };
 
@@ -96,11 +110,11 @@ export default function CreateReceiptPage() {
       return false;
     }
     if (
-      data.filename.trim() === "" ||
-      data.saveDir === "" ||
-      data.receiptNO.trim() === "" ||
-      data.customerName.trim() === "" ||
-      data.detail.trim() === ""
+      data.filename.trim() === '' ||
+      data.saveDir === '' ||
+      data.receiptNO.trim() === '' ||
+      data.customerName.trim() === '' ||
+      data.detail.trim() === ''
     ) {
       return false;
     }
@@ -121,16 +135,16 @@ export default function CreateReceiptPage() {
         !selectedShop ||
         !selectedShop.receiptFormPath ||
         !selectedShop.receiptControlPath ||
-        data.filename.trim() === "" ||
-        data.saveDir === "" ||
-        data.receiptNO === "" ||
+        data.filename.trim() === '' ||
+        data.saveDir === '' ||
+        data.receiptNO === '' ||
         data.amount <= 0 ||
-        data.customerName.trim() === "" ||
-        data.detail.trim() === ""
+        data.customerName.trim() === '' ||
+        data.detail.trim() === ''
       ) {
         return;
       }
-      message.loading("สร้างไฟล์ใบเสร็จรับเงิน...");
+      message.loading('สร้างไฟล์ใบเสร็จรับเงิน...');
       await CreateReceipt({
         TemplatePath: selectedShop.receiptFormPath,
         Filename: data.filename.trim(),
@@ -148,7 +162,7 @@ export default function CreateReceiptPage() {
       });
       message.destroy();
       useAppStore.getState().fetchCustomers();
-      message.success("สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!", 3, WindowReload);
+      message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!', 3, WindowReload);
       // refetch
     } catch (err: any) {
       showBoundary(err);
@@ -205,8 +219,8 @@ export default function CreateReceiptPage() {
         />
         <ErrorAlertCard
           messages={[
-            selectedShop && !selectedShop.receiptFormPath && "ขาดไฟล์ต้นแบบใบเสร็จรับเงิน",
-            selectedShop && !selectedShop.receiptControlPath && "ขาดไฟล์สมุดคุมใบเสร็จรับเงิน",
+            selectedShop && !selectedShop.receiptFormPath && 'ขาดไฟล์ต้นแบบใบเสร็จรับเงิน',
+            selectedShop && !selectedShop.receiptControlPath && 'ขาดไฟล์สมุดคุมใบเสร็จรับเงิน',
           ]}
           action={
             <Button danger ghost onClick={() => navigate(`/setting?shopSlug=${selectedShop?.slug}`)}>
@@ -256,7 +270,7 @@ export default function CreateReceiptPage() {
         </label>
         <AutoComplete<string>
           allowClear
-          options={[{ value: "ค่าวัสดุสำนักงาน" }, { value: "ค่าวัสดุการศึกษา" }, { value: "อื่นๆ โปรดระบุ", disabled: true }]}
+          options={[{ value: 'ค่าวัสดุสำนักงาน' }, { value: 'ค่าวัสดุการศึกษา' }, { value: 'อื่นๆ โปรดระบุ', disabled: true }]}
           onChange={(v) => setData({ ...data, detail: v })}
         />
       </InputContainer>
@@ -279,7 +293,12 @@ export default function CreateReceiptPage() {
         <Input
           type="number"
           value={data.amount}
-          onChange={(e) => setData({ ...data, amount: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber })}
+          onChange={(e) =>
+            setData({
+              ...data,
+              amount: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber,
+            })
+          }
           min={0}
         />
       </InputContainer>

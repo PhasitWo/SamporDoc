@@ -51,13 +51,13 @@ jobs:
       - name: Update wails.json version
         shell: bash
         run: |
-        NEW_VERSION="${{ steps.versioning.outputs.version }}"
-        # -r 'v' removes any leading 'v' if your tag is 'v1.0.0'
-        VERSION_CLEAN=$(echo $NEW_VERSION | sed 's/^v//')
-        
-        jq ".info.productVersion = \"$VERSION_CLEAN\"" wails.json > wails.json.tmp && mv wails.json.tmp wails.json
-        
-        echo "Updated wails.json to version: $VERSION_CLEAN"
+          NEW_VERSION="${{ steps.versioning.outputs.version }}"
+          # -r 'v' removes any leading 'v' if your tag is 'v1.0.0'
+          VERSION_CLEAN=$(echo $NEW_VERSION | sed 's/^v//')
+          
+          jq ".info.productVersion = \"$VERSION_CLEAN\"" wails.json > wails.json.tmp && mv wails.json.tmp wails.json
+          
+          echo "Updated wails.json to version: $VERSION_CLEAN"
 
       - name: Build Wails App & Installer
         shell: bash

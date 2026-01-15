@@ -42,7 +42,7 @@ jobs:
       # -----------------------------------------------------------------
       - name: Get Next Semantic Version
         id: versioning
-        uses: paulhatch/semantic-version@v5
+        uses: paulhatch/semantic-version@v5.4.0
         with:
           tag_prefix: "v"
 

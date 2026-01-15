@@ -29,7 +29,6 @@ jobs:
         id: changelog
         uses: dlavrenuek/conventional-changelog-action@v1.2.4
         with:
-          version: ${{ steps.versioning.outputs.version }}
           from: ${{ steps.versioning.outputs.previous_version }}
           to: ${{ github.sha }}
 
@@ -52,7 +51,7 @@ jobs:
         shell: bash
         run: |
           NEW_VERSION="${{ steps.versioning.outputs.version }}"
-          # -r 'v' removes any leading 'v' if your tag is 'v1.0.0'
+          # ensure that it's clean
           VERSION_CLEAN=$(echo $NEW_VERSION | sed 's/^v//')
           
           jq ".info.productVersion = \"$VERSION_CLEAN\"" wails.json > wails.json.tmp && mv wails.json.tmp wails.json
@@ -76,9 +75,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.versioning.outputs.version }}
-          name: Release ${{ steps.versioning.outputs.version }}
-          body: ${{ steps.changelog.outputs.body || 'Initial release' }}
+          tag_name: ${{ steps.versioning.outputs.version_tag }}
+          name: Release ${{ steps.versioning.outputs.version_tag }}
+          body: ${{ steps.changelog.outputs.body || 'No changelog' }}
 
           files: |
             build/bin/*installer.exe

@@ -3,6 +3,7 @@ __pycache__
 build/bin/
 build/windows/*.syso
 build/windows/*.exe
+build/windows/**/tmp
 build/darwin/*.app
 frontend/dist
 frontend/node_modules

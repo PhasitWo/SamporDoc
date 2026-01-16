@@ -1,7 +1,7 @@
 import { Alert, AlertProps } from 'antd';
 import { useMemo } from 'react';
 
-function ErrorAlertCard({
+export default function ErrorAlertCard({
   messages,
   title = 'เกิดข้อผิดพลาด',
   noTitle,
@@ -31,4 +31,4 @@ function ErrorAlertCard({
   }
   return <Alert type="error" showIcon description={node} title={!noTitle && title} {...rest} />;
 }
-export default ErrorAlertCard;
+

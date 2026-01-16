@@ -24,6 +24,9 @@ jobs:
         with:
           tag_prefix: 'v'
           major_pattern: "/!:|BREAKING CHANGE:/"
+          major_regexp_flags: "i"
+          minor_pattern: "/feat:/"
+          minor_regexp_flags: "i"
 
       - name: Generate Changelog Body
         if: ${{ steps.versioning.outputs.previous_version != '0.0.0' }}

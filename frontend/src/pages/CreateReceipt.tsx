@@ -170,7 +170,7 @@ export default function CreateReceiptPage() {
   };
 
   return (
-    <div className="mx-auto flex flex-col gap-3 items-center justify-center max-w-[500px]">
+    <div className="mx-auto flex flex-col gap-3 items-center justify-center max-w-[500px] overflow-scroll">
       <InputContainer>
         <label>
           ชื่อไฟล์
@@ -237,7 +237,11 @@ export default function CreateReceiptPage() {
         </InputContainer>
         <InputContainer>
           <label>ใบเสร็จลงวันที่</label>
-          <DatePicker onChange={(date) => setData({ ...data, receiptDate: date })} />
+          <DatePicker
+            value={data.receiptDate}
+            onChange={(date) => setData({ ...data, receiptDate: date })}
+            getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+          />
         </InputContainer>
       </div>
       <InputContainer>
@@ -282,7 +286,11 @@ export default function CreateReceiptPage() {
         </InputContainer>
         <InputContainer>
           <label>ใบส่งของลงวันที่</label>
-          <DatePicker onChange={(date) => setData({ ...data, deliveryDate: date })} />
+          <DatePicker
+            value={data.deliveryDate}
+            onChange={(date) => setData({ ...data, deliveryDate: date })}
+            getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+          />
         </InputContainer>
       </div>
       <InputContainer>

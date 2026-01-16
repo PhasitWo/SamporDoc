@@ -54,7 +54,7 @@ const AppLayout = () => {
 
   return (
     <>
-      <Layout className="w-full h-full bg-white text-[17px]">
+      <Layout className="w-full h-full bg-white text-[16px]">
         <Layout.Header className="px-5">
           <Menu
             mode="horizontal"
@@ -91,7 +91,7 @@ function MyApp() {
       theme={{
         token: {
           ...(primaryColorMap[location.pathname] ? { colorPrimary: primaryColorMap[location.pathname] } : undefined),
-          fontSize: 17,
+          fontSize: 16,
         },
         components: {
           Layout: { headerBg: undefined },

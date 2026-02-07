@@ -1,5 +1,5 @@
 import { Input, Button, AutoComplete, Select, DatePicker, App } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { model } from '../../wailsjs/go/models';
 import { GetNextControlNumber, OpenDirectoryDialog, CreateReceipt } from '../../wailsjs/go/main/App';
 import type { DefaultOptionType } from 'antd/es/select';
@@ -11,6 +11,9 @@ import { useAppStore } from '../store/useAppStore';
 import Asterisk from '../components/Asterisk';
 import { isValidWindowsFilename, useShowBoundary } from '../utils';
 import { WindowReload } from '../../wailsjs/runtime/runtime';
+import FormContainer from '../components/FormContainer';
+import { PickerRef } from 'rc-picker';
+import HiddenDatePicker from '../components/HiddenDatePicker';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
@@ -161,16 +164,28 @@ export default function CreateReceiptPage() {
         ReceiptDate: data.receiptDate?.toISOString(),
       });
       message.destroy();
+      // refetch
       useAppStore.getState().fetchCustomers();
       message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!', 3, WindowReload);
-      // refetch
     } catch (err: any) {
       showBoundary(err);
     }
   };
 
+  const hiddenReceiptDateRef = useRef<PickerRef>(null);
+  const hiddenDeliveryDateRef = useRef<PickerRef>(null);
   return (
-    <div className="mx-auto flex flex-col gap-3 items-center justify-center max-w-[500px] overflow-scroll">
+    <FormContainer>
+      <HiddenDatePicker
+        ref={hiddenReceiptDateRef}
+        value={data.receiptDate}
+        onChange={(date) => setData({ ...data, receiptDate: date })}
+      />
+      <HiddenDatePicker
+        ref={hiddenDeliveryDateRef}
+        value={data.deliveryDate}
+        onChange={(date) => setData({ ...data, deliveryDate: date })}
+      />
       <InputContainer>
         <label>
           ชื่อไฟล์
@@ -239,8 +254,9 @@ export default function CreateReceiptPage() {
           <label>ใบเสร็จลงวันที่</label>
           <DatePicker
             value={data.receiptDate}
-            onChange={(date) => setData({ ...data, receiptDate: date })}
-            getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+            readOnly
+            onClick={() => hiddenReceiptDateRef.current?.nativeElement.click()}
+            popupClassName="hidden"
           />
         </InputContainer>
       </div>
@@ -288,8 +304,9 @@ export default function CreateReceiptPage() {
           <label>ใบส่งของลงวันที่</label>
           <DatePicker
             value={data.deliveryDate}
-            onChange={(date) => setData({ ...data, deliveryDate: date })}
-            getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+            readOnly
+            onClick={() => hiddenDeliveryDateRef.current?.nativeElement.click()}
+            popupClassName="hidden"
           />
         </InputContainer>
       </div>
@@ -313,6 +330,6 @@ export default function CreateReceiptPage() {
       <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate} onClick={handleSubmit}>
         สร้างใบเสร็จ
       </Button>
-    </div>
+    </FormContainer>
   );
 }

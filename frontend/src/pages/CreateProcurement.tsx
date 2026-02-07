@@ -1,5 +1,6 @@
 import { Input, Button, AutoComplete, Select, DatePicker, App, Divider, Radio } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import type { PickerRef } from 'rc-picker';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { model } from '../../wailsjs/go/models';
 import { WindowReload } from '../../wailsjs/runtime/runtime';
 import { GetNextControlNumber, OpenDirectoryDialog, CreateProcurement } from '../../wailsjs/go/main/App';
@@ -11,6 +12,8 @@ import InputContainer from '../components/InputContainer';
 import { useAppStore } from '../store/useAppStore';
 import Asterisk from '../components/Asterisk';
 import { isValidWindowsFilename, useShowBoundary } from '../utils';
+import FormContainer from '../components/FormContainer';
+import HiddenDatePicker from '../components/HiddenDatePicker';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
@@ -232,8 +235,15 @@ export default function CreateProcurementPage() {
       showBoundary(err);
     }
   };
+
+  const hiddenPickerRef = useRef<PickerRef>(null);
   return (
-    <div className="mx-auto flex flex-col gap-3 items-center justify-center max-w-[500px] overflow-scroll">
+    <FormContainer>
+      <HiddenDatePicker
+        ref={hiddenPickerRef}
+        value={data.deliveryDate}
+        onChange={(date) => setData({ ...data, deliveryDate: date })}
+      />
       <InputContainer>
         <label>
           ชื่อไฟล์
@@ -302,8 +312,9 @@ export default function CreateProcurementPage() {
           <label>ใบส่งของลงวันที่</label>
           <DatePicker
             value={data.deliveryDate}
-            onChange={(date) => setData({ ...data, deliveryDate: date })}
-            getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+            readOnly
+            onClick={() => hiddenPickerRef.current?.nativeElement.click()}
+            popupClassName="hidden"
           />
         </InputContainer>
       </div>
@@ -447,6 +458,6 @@ export default function CreateProcurementPage() {
       <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate} onClick={handleSubmit}>
         สร้างจัดซื้อจัดจ้าง
       </Button>
-    </div>
+    </FormContainer>
   );
 }

@@ -1,8 +1,11 @@
 package excel
 
 import (
+	"SamporDoc/backend/utils"
 	"fmt"
 	"maps"
+	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -13,6 +16,35 @@ import (
 
 func newError(err error) error {
 	return fmt.Errorf("[EXCEL]: %w", err)
+}
+
+func SaveAsExcelFile(f *excelize.File, outputDir string, filename string) (string, error) {
+	// long path workaround for windows
+	outputPath := filepath.Join(outputDir, filename+".xlsx")
+	if runtime.GOOS == "windows" && len(outputPath) > 180 {
+		drive, err := utils.GetAvailableDriveLetter()
+		if err != nil {
+			return "", newError(err)
+		}
+
+		if err := utils.MapDrive(drive, outputDir); err != nil {
+			return "", newError(err)
+		}
+		defer utils.UnmapDrive(drive)
+
+		shortPath := fmt.Sprintf("%s\\%s", drive, filename+".xlsx")
+
+		if err := f.SaveAs(shortPath); err != nil {
+			return "", newError(err)
+		}
+	} else {
+		// for non-windows or short path
+		err := f.SaveAs(outputPath)
+		if err != nil {
+			return "", newError(err)
+		}
+	}
+	return outputPath, nil
 }
 
 func CreateExcelFile(templatePath string, data map[string]string) (*excelize.File, error) {

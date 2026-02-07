@@ -2,6 +2,8 @@ package utils
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"reflect"
 	"time"
 )
@@ -86,4 +88,29 @@ func ParseString(data string) (parsedStr *string) {
 		parsedStr = &data
 	}
 	return parsedStr
+}
+
+// Windows utils
+// MapDrive takes a long path and assigns it to a drive letter (e.g., "X:")
+func MapDrive(driveLetter string, longPath string) error {
+	cmd := exec.Command("subst", driveLetter, longPath)
+	return cmd.Run()
+}
+
+// UnmapDrive removes the virtual drive
+func UnmapDrive(driveLetter string) error {
+	cmd := exec.Command("subst", driveLetter, "/D")
+	return cmd.Run()
+}
+
+// GetAvailableDriveLetter returns the first unused drive letter (Z: down to D:)
+func GetAvailableDriveLetter() (string, error) {
+	for _, letter := range "ZYXWVUTSRQPONMLKJIHGFED" {
+		drive := string(letter) + ":"
+		_, err := os.Stat(drive + "\\")
+		if os.IsNotExist(err) {
+			return drive, nil
+		}
+	}
+	return "", fmt.Errorf("no available drive letters")
 }

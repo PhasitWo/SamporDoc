@@ -11,7 +11,6 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -214,12 +213,11 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 	logger.Log("WriteReceiptControlFile", params.ControlPath, controlData)
 
 	// save
-	outputFilePath := filepath.Join(params.OutputDir, params.Filename+".xlsx")
-	err = excelFile.SaveAs(outputFilePath)
+	outputFilePath, err := excel.SaveAsExcelFile(excelFile, params.OutputDir, params.Filename)
 	if err != nil {
 		return logger.NewErrorAndLog(err, "SaveOuputReceiptFile")
 	}
-	logger.Log("SaveOuputReceiptFile", outputFilePath)
+	logger.Log("SaveOuputReceiptFile", params.OutputDir, params.Filename)
 
 	err = controlFile.Save()
 	if err != nil {
@@ -416,12 +414,11 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 	logger.Log("WriteProcurementControlFile", params.ControlPath, controlData)
 
 	// save
-	outputFilePath := filepath.Join(params.OutputDir, params.Filename+".xlsx")
-	err = excelFile.SaveAs(outputFilePath)
+	outputFilePath, err := excel.SaveAsExcelFile(excelFile, params.OutputDir, params.Filename)
 	if err != nil {
 		return logger.NewErrorAndLog(err, "SaveOuputProcurementFile")
 	}
-	logger.Log("SaveOuputProcurementFile", outputFilePath)
+	logger.Log("SaveOuputProcurementFile", params.OutputDir, params.Filename)
 
 	err = controlFile.Save()
 	if err != nil {

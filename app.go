@@ -72,10 +72,14 @@ func (a *App) startup(ctx context.Context) {
 
 func (a *App) CMDOpenFile(filePath string) error {
 	var cmd *exec.Cmd
-	if runtime.GOOS == "darwin" {
+	switch runtime.GOOS {
+	case "darwin":
 		cmd = exec.Command("open", filePath)
-	} else {
-		cmd = exec.Command("cmd", "/C", "start", filePath)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", filePath)
+	default:
+		// Fallback for other systems, e.g., Linux
+		cmd = exec.Command("xdg-open", filePath)
 	}
 	return cmd.Run()
 }

@@ -38,3 +38,27 @@ type Log struct {
 	Data          datatypes.JSON
 	CorrelationID *int64 `gorm:"index"`
 }
+
+// type Product struct {
+// 	ID uint64 `gorm:"primaryKey;autoIncrement"`
+// 	// SKU         *string  `gorm:"uniqueIndex" json:"sku" ts_type:"string | null"`
+// 	Name        string   `gorm:"uniqueIndex" json:"name"`
+// 	UnitLabel   *string  `json:"unitLabel" ts_type:"string | null"`
+// 	CashPrice   *float64 `json:"cashPrice" ts_type:"number | null"`
+// 	CreditPrice *float64 `json:"creditPrice" ts_type:"number | null"`
+// }
+
+// type DocumentType string
+
+// const (
+// 	RECEIPT     DocumentType = "RECEIPT"
+// 	PROCUREMENT DocumentType = "PROCUREMENT"
+// )
+
+// type Transaction struct {
+// 	ID           uint64       `gorm:"primaryKey;autoIncrement"`
+// 	DocumentType DocumentType `json:"documentType" ts_type:"'RECEIPT' | 'PROCUREMENT'"`
+// 	ShopID       uint64
+// 	Shop         Shop
+// 	Data         datatypes.JSON
+// }

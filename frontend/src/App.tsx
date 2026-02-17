@@ -69,7 +69,7 @@ const AppLayout = () => {
             styles={{ itemContent: { paddingTop: '5px' } }}
           />
         </Layout.Header>
-        <Layout.Content className="pt-5 pb-[100px]">
+        <Layout.Content className="pt-5 pb-[100px] p-[50px]">
           <Outlet />
         </Layout.Content>
       </Layout>

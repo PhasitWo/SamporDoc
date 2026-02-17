@@ -303,7 +303,7 @@ export default function CreateProcurementPage() {
           }
         />
       </InputContainer>
-      <div className="flex flex-row w-[500px] gap-2">
+      <div className="flex flex-row w-full gap-2">
         <InputContainer>
           <label>เลขที่ใบส่งของ</label>
           <Input readOnly value={data.deliveryNO} />

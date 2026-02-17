@@ -5,7 +5,7 @@ export default function FormContainer({ children, className }: ComponentProps<'d
   return (
     <div
       className={cn(
-        'mx-auto flex flex-col gap-3 items-center justify-center max-w-[500px] overflow-y-scroll',
+        'mx-auto flex flex-col gap-3 items-center justify-center max-w-[750px] overflow-y-auto',
         className
       )}
     >

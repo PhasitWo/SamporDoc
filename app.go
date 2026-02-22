@@ -230,7 +230,7 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 	logger.Log("SaveReceiptControlFile", controlFile.Path)
 
 	// insert to database if the customer does not exist
-	if params.CustomerID != nil {
+	if params.CustomerID == nil {
 		newCustomer := model.Customer{Name: params.CustomerName, Address: params.Address}
 		err = a.repo.CreateCustomer(&newCustomer)
 		if err == nil {
@@ -253,7 +253,6 @@ type ProcurementData struct {
 	Buy             string
 	Project         *string // nullable
 	Amount          float64
-	Quantity        *int // nullable
 	CustomerName    string
 	Address         *string
 	HeadCheckerName *string // nullable
@@ -265,7 +264,7 @@ type ProcurementData struct {
 }
 
 func (p ProcurementData) toExcelKeyValue() map[string]string {
-	var deliveryDate, project, quantity,
+	var deliveryDate, project,
 		address, headCheckerName, checker1Name,
 		checker2Name, objectName, headObjectName, bossName string
 	if p.DeliveryDate == nil {
@@ -277,11 +276,6 @@ func (p ProcurementData) toExcelKeyValue() map[string]string {
 		project = strings.Repeat(".", 43)
 	} else {
 		project = *p.Project
-	}
-	if p.Quantity == nil {
-		quantity = "**QUANTITY**"
-	} else {
-		quantity = strconv.Itoa(*p.Quantity)
 	}
 	if p.Address != nil {
 		address = *p.Address
@@ -311,7 +305,6 @@ func (p ProcurementData) toExcelKeyValue() map[string]string {
 		"BUY":            p.Buy,
 		"PROJECT":        project,
 		"MONEY":          fmt.Sprintf("%.2f", p.Amount),
-		"QUANTITY":       quantity,
 		"NAME":           p.CustomerName,
 		"ADDRESS2":       address,
 		"HEADCHECKER":    headCheckerName,
@@ -336,6 +329,7 @@ const (
 type CreateProcurementParams struct {
 	TemplatePath          string
 	ControlPath           string
+	BookOrderPath         *string // nullable
 	Filename              string
 	OutputDir             string
 	DeliveryNO            string
@@ -344,7 +338,6 @@ type CreateProcurementParams struct {
 	Project               *string // nullable
 	Amount                float64
 	ProcurementOutputType ProcurementOutputType
-	Quantity              *int // nulllable
 	CustomerName          string
 	CustomerID            *uint64 // nulllable
 	Address               *string // nullable
@@ -375,7 +368,6 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 		Buy:             params.Buy,
 		Project:         params.Project,
 		Amount:          params.Amount,
-		Quantity:        params.Quantity,
 		CustomerName:    params.CustomerName,
 		Address:         params.Address,
 		HeadCheckerName: params.HeadCheckerName,
@@ -390,6 +382,19 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 		return logger.NewErrorAndLog(err, "CreateProcurementFile")
 	}
 	logger.Log("CreateProcurementFile", params.TemplatePath, procurementData)
+
+	// book order
+	if params.BookOrderPath != nil {
+		bookOrder, err := excel.GetBookOrderDataFromFile(*params.BookOrderPath)
+		if err != nil {
+			return logger.NewErrorAndLog(err, "GetBookOrderDataFromFile")
+		}
+		excelFile, err = excel.WriteBookOrder(excelFile, "data", bookOrder)
+		if err != nil {
+			return logger.NewErrorAndLog(err, "WriteBookOrder")
+		}
+		logger.Log("WriteBookOrder", bookOrder)
+	}
 
 	switch params.ProcurementOutputType {
 	case ONLY_DELIVERY_NOTE:
@@ -458,6 +463,36 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 
 	// open file
 	err = a.CMDOpenFile(outputFilePath)
+	if err != nil {
+		return logger.NewErrorAndLog(err, "CMDOpenProcurementFile")
+	}
+	return nil
+}
+
+func (a *App) GetBookOrderFromDataSourceFile(filePath string) (excel.BookOrder, error) {
+	logger := log.NewSingleLog(a.repo)
+	data, err := excel.GetBookOrderDataFromFile(filePath)
+	if err != nil {
+		return nil, logger.NewErrorAndLog(err, "GetBookOrderFromDataSourceFile")
+	}
+	logger.Log("GetBookOrderFromDataSourceFile", filePath)
+	return data, nil
+}
+
+func (a *App) AutoMoveBookOrder(procurementFilepath string, bookOrderFilePath string) error {
+	logger := log.NewSingleLog(a.repo)
+	f, err := excel.AutoMoveBookOrder(procurementFilepath, bookOrderFilePath)
+	if err != nil {
+		return logger.NewErrorAndLog(err, "AutoMoveBookOrder")
+	}
+	logger.Log("AutoMoveBookOrder", procurementFilepath, bookOrderFilePath)
+
+	err = excel.SaveExcelFile(f)
+	if err != nil {
+		return logger.NewErrorAndLog(err, "SaveExcelFile")
+	}
+
+	err = a.CMDOpenFile(procurementFilepath)
 	if err != nil {
 		return logger.NewErrorAndLog(err, "CMDOpenProcurementFile")
 	}

@@ -23,10 +23,11 @@ type Shop struct {
 	Slug                   string  `gorm:"uniqueIndex" json:"slug"`
 	Name                   string  `json:"name"`
 	SortingLevel           uint64  `json:"sortingLevel"`
-	ReceiptFormPath        *string `json:"receiptFormPath" ts_type:"string | null"`
-	ReceiptControlPath     *string `json:"receiptControlPath" ts_type:"string | null"`
-	ProcurementLTEFormPath *string `json:"procurementLTEFormPath" ts_type:"string | null"`
-	ProcurementGTFormPath  *string `json:"procurementGTFormPath" ts_type:"string | null"`
+	ReceiptMainFormPath    *string `json:"receiptMainFormPath" ts_type:"string | null"`
+	ReceiptMainControlPath *string `json:"receiptMainControlPath" ts_type:"string | null"`
+	ReceiptSecFormPath     *string `json:"receiptSecFormPath" ts_type:"string | null"`
+	ReceiptSecControlPath  *string `json:"receiptSecControlPath" ts_type:"string | null"`
+	ProcurementFormPath    *string `json:"procurementFormPath" ts_type:"string | null"`
 	ProcurementControlPath *string `json:"procurementControlPath" ts_type:"string | null"`
 }
 

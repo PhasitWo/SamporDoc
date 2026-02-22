@@ -8,7 +8,7 @@ import (
 
 const AppConfigDirName = "SamporDoc"
 const SettingFileName = "setting.json"
-const DBFileName = "app.db"
+const DBFileName = "app_doc.db"
 
 func GetAppConfigDir() (string, error) {
 	configDir, err := os.UserConfigDir()

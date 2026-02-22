@@ -14,6 +14,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './pages/ErrorFallback';
 import { useShowBoundary } from './utils';
 import CreateProcurement from './pages/CreateProcurement';
+import Automove from './pages/Automove';
 
 dayjs.locale('th');
 dayjs.extend(buddhistEra);
@@ -40,6 +41,7 @@ const globalBuddhistLocale: typeof thTH = {
 const primaryColorMap: Record<string, string | undefined> = {
   '/': '#00b96b',
   '/createProcurement': '#e68415',
+  '/automove': '#f24141',
 };
 
 const AppLayout = () => {
@@ -52,6 +54,22 @@ const AppLayout = () => {
     init().catch(showBoundary);
   }, []);
 
+  // Prevent Backspace/Delete from navigating back
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        const target = e.target as HTMLElement;
+        const isEditable = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+        if (!isEditable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <>
       <Layout className="w-full h-full bg-white text-[14px]">
@@ -61,6 +79,7 @@ const AppLayout = () => {
             items={[
               { key: '/', label: 'สร้างใบเสร็จรับเงิน' },
               { key: '/createProcurement', label: 'สร้างจัดซื้อจัดจ้าง' },
+              { key: '/automove', label: 'Auto Move' },
               { key: '/setting', label: 'ตั้งค่า' },
             ]}
             onClick={(info) => navigate(info.key)}
@@ -111,6 +130,7 @@ function MyApp() {
             <Route element={<AppLayout />}>
               <Route index element={<CreateReceipt />} />
               <Route path="/createProcurement" element={<CreateProcurement />} />
+              <Route path="/automove" element={<Automove />} />
               <Route path="/setting" element={<Setting />} />
             </Route>
           </Routes>

@@ -1,9 +1,15 @@
-import { Input, Button, AutoComplete, Select, DatePicker, App, Divider, Radio } from 'antd';
+import { Input, Button, AutoComplete, Select, DatePicker, App, Divider } from 'antd';
 import type { PickerRef } from 'rc-picker';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { model } from '../../wailsjs/go/models';
+import { excel, model } from '../../wailsjs/go/models';
 import { WindowReload } from '../../wailsjs/runtime/runtime';
-import { GetNextControlNumber, OpenDirectoryDialog, CreateProcurement } from '../../wailsjs/go/main/App';
+import {
+  GetNextControlNumber,
+  OpenDirectoryDialog,
+  CreateProcurement,
+  OpenExcelFileDialog,
+  GetBookOrderFromDataSourceFile,
+} from '../../wailsjs/go/main/App';
 import type { DefaultOptionType } from 'antd/es/select';
 import { Dayjs } from 'dayjs';
 import ErrorAlertCard from '../components/ErrorAlertCard';
@@ -11,9 +17,10 @@ import { useNavigate } from 'react-router';
 import InputContainer from '../components/InputContainer';
 import { useAppStore } from '../store/useAppStore';
 import Asterisk from '../components/Asterisk';
-import { isValidWindowsFilename, useShowBoundary } from '../utils';
+import { getFileName, isValidWindowsFilename, useShowBoundary } from '../utils';
 import FormContainer from '../components/FormContainer';
 import HiddenDatePicker from '../components/HiddenDatePicker';
+import BookOrderTable from '../components/BookOrderTable';
 
 interface ShopOptionType extends DefaultOptionType {
   meta: model.Shop;
@@ -38,7 +45,6 @@ interface FormData {
   buy: string;
   project: string;
   amount: number;
-  quantity: number;
   procurementOutputType: ProcurementOutputType;
   customerName: string;
   address: string;
@@ -50,7 +56,7 @@ interface FormData {
   bossName: string;
 }
 
-type QuantityType = 'LTE' | 'GT' | 'CUSTOM';
+// type QuantityType = 'LTE' | 'GT' | 'CUSTOM';
 
 export default function CreateProcurementPage() {
   const navigate = useNavigate();
@@ -67,7 +73,6 @@ export default function CreateProcurementPage() {
     buy: '',
     project: '',
     amount: 0,
-    quantity: 0,
     procurementOutputType: 'FULL',
     headCheckerName: '',
     checker1Name: '',
@@ -76,8 +81,8 @@ export default function CreateProcurementPage() {
     headObjectName: '',
     bossName: '',
   });
-  const [quantityType, setQuantityType] = useState<QuantityType>('LTE');
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [bookOrderData, setBookOrderData] = useState<{ filePath: string; data: excel.PublisherItem[] } | null>(null);
   // shop
   const [selectedShop, setSelectedShop] = useState<model.Shop | null>(null);
   const shops = useAppStore((s) => s.shops);
@@ -145,12 +150,7 @@ export default function CreateProcurementPage() {
   };
 
   const readyToCreate = useMemo<boolean>(() => {
-    if (
-      selectedShop == null ||
-      !selectedShop.procurementLTEFormPath ||
-      !selectedShop.procurementGTFormPath ||
-      !selectedShop.procurementControlPath
-    ) {
+    if (selectedShop == null || !selectedShop.procurementFormPath || !selectedShop.procurementControlPath) {
       return false;
     }
     if (data.amount <= 0) {
@@ -168,6 +168,13 @@ export default function CreateProcurementPage() {
     return true;
   }, [data, selectedShop]);
 
+  const handleChooseDir = async () => {
+    const path = await OpenDirectoryDialog();
+    if (path) {
+      setData({ ...data, saveDir: path });
+    }
+  };
+
   const handleShopChange = (_: any, option?: ShopOptionType | ShopOptionType[]) => {
     if (option && !Array.isArray(option)) {
       setSelectedShop(option.meta);
@@ -176,12 +183,28 @@ export default function CreateProcurementPage() {
     }
   };
 
+  const handleImportBookOrder = async () => {
+    const filePath = await OpenExcelFileDialog();
+    if (filePath) {
+      message.loading('กำลังนำเข้าไฟล์...', 2);
+      try {
+        const bookOrder = await GetBookOrderFromDataSourceFile(filePath);
+        setTimeout(() => {
+          message.destroy();
+          setBookOrderData({ filePath, data: bookOrder });
+          message.success('นำเข้าไฟล์สำเร็จ!', 3);
+        }, 500);
+      } catch (err) {
+        message.error(`นำเข้าไฟล์ไม่สำเร็จ :${(err as Error).message}`, 10);
+      }
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       if (
         !selectedShop ||
-        !selectedShop.procurementLTEFormPath ||
-        !selectedShop.procurementGTFormPath ||
+        !selectedShop.procurementFormPath ||
         !selectedShop.procurementControlPath ||
         data.filename.trim() === '' ||
         data.saveDir === '' ||
@@ -192,21 +215,11 @@ export default function CreateProcurementPage() {
       ) {
         return;
       }
-      const qty = quantityType === 'CUSTOM' ? data.quantity : undefined;
-      let template: string;
-      switch (quantityType) {
-        case 'CUSTOM':
-          template = data.quantity <= 11 ? selectedShop.procurementLTEFormPath : selectedShop.procurementGTFormPath;
-          break;
-        case 'LTE':
-          template = selectedShop.procurementLTEFormPath;
-        case 'GT':
-          template = selectedShop.procurementGTFormPath;
-      }
 
+      setIsLoading(true);
       message.loading('สร้างไฟล์จัดซื้อจัดจ้าง...');
       await CreateProcurement({
-        TemplatePath: template,
+        TemplatePath: selectedShop.procurementFormPath,
         ControlPath: selectedShop.procurementControlPath,
         Filename: data.filename.trim(),
         OutputDir: data.saveDir,
@@ -215,8 +228,8 @@ export default function CreateProcurementPage() {
         Buy: data.buy.trim(),
         Project: data.project.trim() || undefined,
         Amount: data.amount,
+        BookOrderPath: bookOrderData ? bookOrderData.filePath : undefined,
         ProcurementOutputType: data.procurementOutputType,
-        Quantity: qty,
         CustomerName: data.customerName.trim(),
         CustomerID: selectedCustomer?.ID,
         Address: data.address.trim() || undefined,
@@ -233,6 +246,8 @@ export default function CreateProcurementPage() {
       // refetch
     } catch (err: any) {
       showBoundary(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -264,17 +279,8 @@ export default function CreateProcurementPage() {
           <Asterisk />
         </label>
         <div className="flex gap-1">
-          <Input readOnly value={data.saveDir} />
-          <Button
-            type="default"
-            onClick={() =>
-              OpenDirectoryDialog().then((path) => {
-                if (path) {
-                  setData({ ...data, saveDir: path });
-                }
-              })
-            }
-          >
+          <Input readOnly value={data.saveDir} onClick={handleChooseDir} />
+          <Button type="default" onClick={() => handleChooseDir}>
             เลือก
           </Button>
         </div>
@@ -292,8 +298,7 @@ export default function CreateProcurementPage() {
         />
         <ErrorAlertCard
           messages={[
-            selectedShop && !selectedShop.procurementLTEFormPath && 'ขาดไฟล์ต้นแบบไม่เกิน 11 รายการ',
-            selectedShop && !selectedShop.procurementGTFormPath && 'ขาดไฟล์ต้นแบบเกิน 11 รายการ',
+            selectedShop && !selectedShop.procurementFormPath && 'ขาดไฟล์ต้นแบบจัดซื้อจัดจ้าง',
             selectedShop && !selectedShop.procurementControlPath && 'ขาดไฟล์สมุดคุมใบส่งของ',
           ]}
           action={
@@ -356,7 +361,7 @@ export default function CreateProcurementPage() {
         />
       </InputContainer>
       <Divider />
-      <InputContainer>
+      {/* <InputContainer>
         <label>จำนวนรายการ</label>
         <Radio.Group
           vertical
@@ -390,7 +395,7 @@ export default function CreateProcurementPage() {
             setQuantityType(e.target.value);
           }}
         />
-      </InputContainer>
+      </InputContainer> */}
       <InputContainer>
         <label>รูปแบบ</label>
         <Select<string, ProcurementOutputTypeOptionType>
@@ -406,6 +411,21 @@ export default function CreateProcurementPage() {
             }
           }}
         />
+      </InputContainer>
+      <Divider />
+      <InputContainer>
+        <div className="flex gap-3 items-baseline truncate">
+          <Button
+            className="w-fit mb-3"
+            danger={Boolean(bookOrderData)}
+            onClick={bookOrderData ? () => setBookOrderData(null) : handleImportBookOrder}
+          >
+            {bookOrderData ? 'ยกเลิก' : 'Import ไฟล์แยกสำนัก'}
+          </Button>
+          {bookOrderData && <span>{getFileName(bookOrderData.filePath)}</span>}
+        </div>
+
+        {bookOrderData && <BookOrderTable data={bookOrderData.data} />}
       </InputContainer>
       <Divider />
       <InputContainer>
@@ -455,7 +475,7 @@ export default function CreateProcurementPage() {
         <label>ผู้อำนวยการ</label>
         <Input value={data.bossName} onChange={(e) => setData({ ...data, bossName: e.target.value })} />
       </InputContainer>
-      <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate} onClick={handleSubmit}>
+      <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate || isLoading} onClick={handleSubmit}>
         สร้างจัดซื้อจัดจ้าง
       </Button>
     </FormContainer>

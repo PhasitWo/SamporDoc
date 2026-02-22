@@ -54,6 +54,7 @@ export default function CreateReceiptPage() {
     deliveryDate: null,
     amount: 0,
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   // shop
   const [selectedShop, setSelectedShop] = useState<model.Shop | null>(null);
@@ -68,15 +69,30 @@ export default function CreateReceiptPage() {
     [shops]
   );
 
+  const [receiptType, setReceiptType] = useState<'MAIN' | 'SEC'>('MAIN');
+  const [receiptFormPath, setReceiptFormPath] = useState<string | null>(null);
+  const [receiptControlPath, setReceiptControlPath] = useState<string | null>(null);
+
   useEffect(() => {
     (async () => {
       setData({ ...data, receiptNO: '' });
-      if (selectedShop && selectedShop.receiptControlPath) {
-        const nextNumber = await GetNextControlNumber(selectedShop.receiptControlPath);
-        setData({ ...data, receiptNO: String(nextNumber) });
+      if (selectedShop) {
+        setReceiptFormPath(
+          receiptType === 'MAIN' ? (selectedShop.receiptMainFormPath ?? null) : (selectedShop.receiptSecFormPath ?? null)
+        );
+        const controlPath =
+          receiptType === 'MAIN' ? (selectedShop.receiptMainControlPath ?? null) : (selectedShop.receiptSecControlPath ?? null);
+        setReceiptControlPath(controlPath);
+        if (controlPath) {
+          const nextNumber = await GetNextControlNumber(controlPath);
+          setData({ ...data, receiptNO: String(nextNumber) });
+        }
+      } else {
+        setReceiptFormPath(null);
+        setReceiptControlPath(null);
       }
     })();
-  }, [selectedShop]);
+  }, [selectedShop, receiptType]);
 
   // customers
   const [selectedCustomer, setSelectedCustomer] = useState<model.Customer | null>(null);
@@ -106,7 +122,7 @@ export default function CreateReceiptPage() {
   };
 
   const readyToCreate = useMemo<boolean>(() => {
-    if (selectedShop == null || !selectedShop.receiptFormPath || !selectedShop.receiptControlPath) {
+    if (selectedShop == null || !receiptFormPath || !receiptControlPath) {
       return false;
     }
     if (data.amount <= 0) {
@@ -136,8 +152,8 @@ export default function CreateReceiptPage() {
     try {
       if (
         !selectedShop ||
-        !selectedShop.receiptFormPath ||
-        !selectedShop.receiptControlPath ||
+        !receiptFormPath ||
+        !receiptControlPath ||
         data.filename.trim() === '' ||
         data.saveDir === '' ||
         data.receiptNO === '' ||
@@ -147,16 +163,18 @@ export default function CreateReceiptPage() {
       ) {
         return;
       }
+
+      setIsLoading(true);
       message.loading('สร้างไฟล์ใบเสร็จรับเงิน...');
       await CreateReceipt({
-        TemplatePath: selectedShop.receiptFormPath,
+        TemplatePath: receiptFormPath,
         Filename: data.filename.trim(),
         OutputDir: data.saveDir,
         ReceiptNO: data.receiptNO,
         CustomerName: data.customerName.trim(),
         CustomerID: selectedCustomer?.ID,
         Amount: data.amount,
-        ControlPath: selectedShop.receiptControlPath,
+        ControlPath: receiptControlPath,
         Address: data.address.trim() || undefined,
         DeliveryNO: data.deliveryNO.trim() || undefined,
         Detail: data.detail.trim(),
@@ -169,6 +187,8 @@ export default function CreateReceiptPage() {
       message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!', 3, WindowReload);
     } catch (err: any) {
       showBoundary(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -234,8 +254,12 @@ export default function CreateReceiptPage() {
         />
         <ErrorAlertCard
           messages={[
-            selectedShop && !selectedShop.receiptFormPath && 'ขาดไฟล์ต้นแบบใบเสร็จรับเงิน',
-            selectedShop && !selectedShop.receiptControlPath && 'ขาดไฟล์สมุดคุมใบเสร็จรับเงิน',
+            selectedShop &&
+              !receiptFormPath &&
+              `ขาดไฟล์ต้นแบบใบเสร็จรับเงิน ${receiptType === 'MAIN' ? '(เล่มหลัก)' : '(เล่มรอง)'} `,
+            selectedShop &&
+              !receiptControlPath &&
+              `ขาดไฟล์สมุดคุมใบเสร็จรับเงิน ${receiptType === 'MAIN' ? '(เล่มหลัก)' : '(เล่มรอง)'} `,
           ]}
           action={
             <Button danger ghost onClick={() => navigate(`/setting?shopSlug=${selectedShop?.slug}`)}>
@@ -246,6 +270,17 @@ export default function CreateReceiptPage() {
         />
       </InputContainer>
       <div className="flex flex-row w-full gap-2">
+        <InputContainer>
+          <label>เล่มใบเสร็จ</label>
+          <Select
+            options={[
+              { label: 'เล่มหลัก', value: 'MAIN' },
+              { label: 'เล่มรอง', value: 'SEC' },
+            ]}
+            onChange={(value) => setReceiptType(value as 'MAIN' | 'SEC')}
+            value={receiptType}
+          />
+        </InputContainer>
         <InputContainer>
           <label>เลขที่ใบเสร็จ</label>
           <Input readOnly value={data.receiptNO} />
@@ -327,7 +362,7 @@ export default function CreateReceiptPage() {
           min={0}
         />
       </InputContainer>
-      <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate} onClick={handleSubmit}>
+      <Button className="mt-3 w-full" type="primary" disabled={!readyToCreate || isLoading} onClick={handleSubmit}>
         สร้างใบเสร็จ
       </Button>
     </FormContainer>

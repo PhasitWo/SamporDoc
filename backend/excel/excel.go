@@ -265,7 +265,7 @@ func GetBookOrderDataFromFile(filepath string) (BookOrder, error) {
 		}
 	}()
 
-	// PUBLISHER_CELL_ADDRESS := "F4"
+	PUBLISHER_CELL_ADDRESS := "F4"
 	data := []PublisherItem{}
 	dataMap := make(map[string]*PublisherItem)
 	sheetList := f.GetSheetList()
@@ -274,8 +274,10 @@ func GetBookOrderDataFromFile(filepath string) (BookOrder, error) {
 		if err != nil {
 			return nil, newError(err)
 		}
-		// publisherName, _ := f.GetCellValue(activeSheetName, PUBLISHER_CELL_ADDRESS)
-		publisherName := activeSheetName
+		publisherName, _ := f.GetCellValue(activeSheetName, PUBLISHER_CELL_ADDRESS)
+		if strings.TrimSpace(publisherName) == "" {
+			publisherName = activeSheetName
+		}
 		targetPublisher := dataMap[publisherName]
 		if targetPublisher == nil {
 			targetPublisher = &PublisherItem{Name: publisherName}

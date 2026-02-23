@@ -159,7 +159,6 @@ type CreateReceiptParams struct {
 	ControlPath  string
 	Filename     string
 	OutputDir    string
-	ReceiptNO    string
 	ReceiptDate  *string // nullable
 	CustomerName string
 	CustomerID   *uint64 // nullable
@@ -175,20 +174,22 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 	logger := log.NewUnitOfLog(a.repo)
 	// 	process data
 	var receiptDate, deliveryDate *time.Time
-	var convertedReceiptNO int
 	if receiptDate, err = utils.ParseTime(params.ReceiptDate); err != nil {
 		return logger.NewErrorAndLog(err, "ParseTime(params.ReceiptDate)")
 	}
 	if deliveryDate, err = utils.ParseTime(params.DeliveryDate); err != nil {
 		return logger.NewErrorAndLog(err, "ParseTime(params.DeliveryDate)")
 	}
-	if convertedReceiptNO, err = strconv.Atoi(params.ReceiptNO); err != nil {
-		return logger.NewErrorAndLog(err, "strconv.Atoi(params.ReceiptNO)")
+
+	// get control number
+	realReceiptNo, err := a.GetNextControlNumber(params.ControlPath)
+	if err != nil {
+		return logger.NewErrorAndLog(err, "GetNextControlNumber")
 	}
 
 	// create excel file
 	receiptData := ReceiptData{
-		ReceiptNO:    params.ReceiptNO,
+		ReceiptNO:    strconv.Itoa(realReceiptNo),
 		ReceiptDate:  receiptDate,
 		CustomerName: params.CustomerName,
 		Address:      params.Address,
@@ -204,7 +205,7 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 	logger.Log("CreateReceiptFile", params.TemplatePath, receiptData)
 
 	controlData := excel.ControlData{
-		NO:           convertedReceiptNO,
+		NO:           realReceiptNo,
 		CustomerName: params.CustomerName,
 		Detail:       params.Detail,
 		Amount:       params.Amount,
@@ -230,7 +231,7 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 	logger.Log("SaveReceiptControlFile", controlFile.Path)
 
 	// insert to database if the customer does not exist
-	if params.CustomerID != nil {
+	if params.CustomerID == nil {
 		newCustomer := model.Customer{Name: params.CustomerName, Address: params.Address}
 		err = a.repo.CreateCustomer(&newCustomer)
 		if err == nil {
@@ -253,7 +254,6 @@ type ProcurementData struct {
 	Buy             string
 	Project         *string // nullable
 	Amount          float64
-	Quantity        *int // nullable
 	CustomerName    string
 	Address         *string
 	HeadCheckerName *string // nullable
@@ -265,7 +265,7 @@ type ProcurementData struct {
 }
 
 func (p ProcurementData) toExcelKeyValue() map[string]string {
-	var deliveryDate, project, quantity,
+	var deliveryDate, project,
 		address, headCheckerName, checker1Name,
 		checker2Name, objectName, headObjectName, bossName string
 	if p.DeliveryDate == nil {
@@ -277,11 +277,6 @@ func (p ProcurementData) toExcelKeyValue() map[string]string {
 		project = strings.Repeat(".", 43)
 	} else {
 		project = *p.Project
-	}
-	if p.Quantity == nil {
-		quantity = "**QUANTITY**"
-	} else {
-		quantity = strconv.Itoa(*p.Quantity)
 	}
 	if p.Address != nil {
 		address = *p.Address
@@ -311,7 +306,6 @@ func (p ProcurementData) toExcelKeyValue() map[string]string {
 		"BUY":            p.Buy,
 		"PROJECT":        project,
 		"MONEY":          fmt.Sprintf("%.2f", p.Amount),
-		"QUANTITY":       quantity,
 		"NAME":           p.CustomerName,
 		"ADDRESS2":       address,
 		"HEADCHECKER":    headCheckerName,
@@ -336,15 +330,14 @@ const (
 type CreateProcurementParams struct {
 	TemplatePath          string
 	ControlPath           string
+	BookOrderPath         *string // nullable
 	Filename              string
 	OutputDir             string
-	DeliveryNO            string
 	DeliveryDate          *string // nullable
 	Buy                   string
 	Project               *string // nullable
 	Amount                float64
 	ProcurementOutputType ProcurementOutputType
-	Quantity              *int // nulllable
 	CustomerName          string
 	CustomerID            *uint64 // nulllable
 	Address               *string // nullable
@@ -361,35 +354,70 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 	logger := log.NewUnitOfLog(a.repo)
 	// 	process data
 	var deliveryDate *time.Time
-	var convertedDeliveryNO int
 	if deliveryDate, err = utils.ParseTime(params.DeliveryDate); err != nil {
 		return logger.NewErrorAndLog(err, "ParseTime(params.DeliveryDate)")
 	}
-	if convertedDeliveryNO, err = strconv.Atoi(params.DeliveryNO); err != nil {
-		return logger.NewErrorAndLog(err, "strconv.Atoi(params.DeliveryNO)")
+	var headCheckerName, checker1Name, checker2Name, objectName, headObjectName, bossName *string
+	emptyName := strings.Repeat(" ", 35)
+	if params.HeadCheckerName == nil {
+		headCheckerName = &emptyName
 	}
+	if params.Checker1Name == nil {
+		checker1Name = &emptyName
+	}
+	if params.Checker2Name == nil {
+		checker2Name = &emptyName
+	}
+	if params.ObjectName == nil {
+		objectName = &emptyName
+	}
+	if params.HeadObjectName == nil {
+		headObjectName = &emptyName
+	}
+	if params.BossName == nil {
+		bossName = &emptyName
+	}
+
+	// get control number
+	realDeliveryNo, err := a.GetNextControlNumber(params.ControlPath)
+	if err != nil {
+		return logger.NewErrorAndLog(err, "GetNextControlNumber")
+	}
+
 	// create excel file
 	procurementData := ProcurementData{
-		DeliveryNO:      params.DeliveryNO,
+		DeliveryNO:      strconv.Itoa(realDeliveryNo),
 		DeliveryDate:    deliveryDate,
 		Buy:             params.Buy,
 		Project:         params.Project,
 		Amount:          params.Amount,
-		Quantity:        params.Quantity,
 		CustomerName:    params.CustomerName,
 		Address:         params.Address,
-		HeadCheckerName: params.HeadCheckerName,
-		Checker1Name:    params.Checker1Name,
-		Checker2Name:    params.Checker2Name,
-		ObjectName:      params.ObjectName,
-		HeadObjectName:  params.HeadObjectName,
-		BossName:        params.BossName,
+		HeadCheckerName: headCheckerName,
+		Checker1Name:    checker1Name,
+		Checker2Name:    checker2Name,
+		ObjectName:      objectName,
+		HeadObjectName:  headObjectName,
+		BossName:        bossName,
 	}
 	excelFile, err := excel.CreateExcelFile(params.TemplatePath, procurementData.toExcelKeyValue())
 	if err != nil {
 		return logger.NewErrorAndLog(err, "CreateProcurementFile")
 	}
 	logger.Log("CreateProcurementFile", params.TemplatePath, procurementData)
+
+	// book order
+	if params.BookOrderPath != nil {
+		bookOrder, err := excel.GetBookOrderDataFromFile(*params.BookOrderPath)
+		if err != nil {
+			return logger.NewErrorAndLog(err, "GetBookOrderDataFromFile")
+		}
+		excelFile, err = excel.WriteBookOrder(excelFile, "data", bookOrder)
+		if err != nil {
+			return logger.NewErrorAndLog(err, "WriteBookOrder")
+		}
+		logger.Log("WriteBookOrder", bookOrder)
+	}
 
 	switch params.ProcurementOutputType {
 	case ONLY_DELIVERY_NOTE:
@@ -405,7 +433,7 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 	}
 
 	controlData := excel.ControlData{
-		NO:           convertedDeliveryNO,
+		NO:           realDeliveryNo,
 		CustomerName: params.CustomerName,
 		Detail:       params.Buy,
 		Amount:       params.Amount,
@@ -458,6 +486,36 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 
 	// open file
 	err = a.CMDOpenFile(outputFilePath)
+	if err != nil {
+		return logger.NewErrorAndLog(err, "CMDOpenProcurementFile")
+	}
+	return nil
+}
+
+func (a *App) GetBookOrderFromDataSourceFile(filePath string) (excel.BookOrder, error) {
+	logger := log.NewSingleLog(a.repo)
+	data, err := excel.GetBookOrderDataFromFile(filePath)
+	if err != nil {
+		return nil, logger.NewErrorAndLog(err, "GetBookOrderFromDataSourceFile")
+	}
+	logger.Log("GetBookOrderFromDataSourceFile", filePath)
+	return data, nil
+}
+
+func (a *App) AutoMoveBookOrder(procurementFilepath string, bookOrderFilePath string) error {
+	logger := log.NewSingleLog(a.repo)
+	f, err := excel.AutoMoveBookOrder(procurementFilepath, bookOrderFilePath)
+	if err != nil {
+		return logger.NewErrorAndLog(err, "AutoMoveBookOrder")
+	}
+	logger.Log("AutoMoveBookOrder", procurementFilepath, bookOrderFilePath)
+
+	err = excel.SaveExcelFile(f)
+	if err != nil {
+		return logger.NewErrorAndLog(err, "SaveExcelFile")
+	}
+
+	err = a.CMDOpenFile(procurementFilepath)
 	if err != nil {
 		return logger.NewErrorAndLog(err, "CMDOpenProcurementFile")
 	}

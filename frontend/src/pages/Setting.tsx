@@ -88,15 +88,17 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
     <div className="w-[500px] mt-5 flex flex-col gap-3">
       <div className="font-bold text-2xl mb-3">ใบเสร็จรับเงิน</div>
       <InputContainer>
-        <label>ไฟล์ต้นแบบใบเสร็จรับเงิน</label>
+        <label>
+          ไฟล์ต้นแบบใบเสร็จรับเงิน <span className="font-extrabold">(เล่มหลัก)</span>
+        </label>
         <div className="flex gap-1">
-          <Input readOnly value={shop.receiptFormPath ?? ''} />
+          <Input readOnly value={shop.receiptMainFormPath ?? ''} />
           <Button
             type="default"
             onClick={async () => {
               const path = await OpenExcelFileDialog();
               if (path !== '') {
-                setShop({ ...shop, receiptFormPath: path });
+                setShop({ ...shop, receiptMainFormPath: path });
               }
             }}
           >
@@ -105,15 +107,52 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
         </div>
       </InputContainer>
       <InputContainer>
-        <label>ไฟล์สมุดคุมใบเสร็จรับเงิน</label>
+        <label>ไฟล์สมุดคุมใบเสร็จรับเงิน <span className="font-extrabold">(เล่มหลัก)</span></label>
         <div className="flex gap-1">
-          <Input readOnly value={shop.receiptControlPath ?? ''} />
+          <Input readOnly value={shop.receiptMainControlPath ?? ''} />
           <Button
             type="default"
             onClick={async () => {
               OpenExcelFileDialog().then((path) => {
                 if (path !== '') {
-                  setShop({ ...shop, receiptControlPath: path });
+                  setShop({ ...shop, receiptMainControlPath: path });
+                }
+              });
+            }}
+          >
+            เลือก
+          </Button>
+        </div>
+      </InputContainer>
+       <InputContainer>
+        <label>
+          ไฟล์ต้นแบบใบเสร็จรับเงิน <span className="font-extrabold">(เล่มรอง)</span>
+        </label>
+        <div className="flex gap-1">
+          <Input readOnly value={shop.receiptSecFormPath ?? ''} />
+          <Button
+            type="default"
+            onClick={async () => {
+              const path = await OpenExcelFileDialog();
+              if (path !== '') {
+                setShop({ ...shop, receiptSecFormPath: path });
+              }
+            }}
+          >
+            เลือก
+          </Button>
+        </div>
+      </InputContainer>
+      <InputContainer>
+        <label>ไฟล์สมุดคุมใบเสร็จรับเงิน <span className="font-extrabold">(เล่มรอง)</span></label>
+        <div className="flex gap-1">
+          <Input readOnly value={shop.receiptSecControlPath ?? ''} />
+          <Button
+            type="default"
+            onClick={async () => {
+              OpenExcelFileDialog().then((path) => {
+                if (path !== '') {
+                  setShop({ ...shop, receiptSecControlPath: path });
                 }
               });
             }}
@@ -125,32 +164,15 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
       <Divider />
       <div className="font-bold text-2xl mb-3">จัดซื้อจัดจ้าง</div>
       <InputContainer>
-        <label>ไฟล์ต้นแบบจัดซื้อจัดจ้างไม่เกิน 11 รายการ</label>
+        <label>ไฟล์ต้นแบบจัดซื้อจัดจ้าง</label>
         <div className="flex gap-1">
-          <Input readOnly value={shop.procurementLTEFormPath ?? ''} />
+          <Input readOnly value={shop.procurementFormPath ?? ''} />
           <Button
             type="default"
             onClick={async () => {
               const path = await OpenExcelFileDialog();
               if (path !== '') {
-                setShop({ ...shop, procurementLTEFormPath: path });
-              }
-            }}
-          >
-            เลือก
-          </Button>
-        </div>
-      </InputContainer>
-      <InputContainer>
-        <label>ไฟล์ต้นแบบจัดซื้อจัดจ้างเกิน 11 รายการ</label>
-        <div className="flex gap-1">
-          <Input readOnly value={shop.procurementGTFormPath ?? ''} />
-          <Button
-            type="default"
-            onClick={async () => {
-              const path = await OpenExcelFileDialog();
-              if (path !== '') {
-                setShop({ ...shop, procurementGTFormPath: path });
+                setShop({ ...shop, procurementFormPath: path });
               }
             }}
           >

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strconv"
 	"time"
 )
 
@@ -28,6 +29,13 @@ func IsNil[T any](value *T) bool {
 		}
 	}
 
+	return false
+}
+
+func IsFloat(value string) bool {
+	if _, err := strconv.ParseFloat(value, 64); err == nil {
+		return true
+	}
 	return false
 }
 

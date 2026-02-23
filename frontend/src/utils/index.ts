@@ -59,3 +59,17 @@ export const isValidWindowsFilename = (filename: string): boolean => {
 
   return true;
 };
+
+const formatter = new Intl.NumberFormat('en-US', {
+  style: 'decimal',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+export const moneyFormat = (value: number): string => {
+  return formatter.format(value);
+};
+
+export const getFileName = (path: string): string => {
+  // This regex looks for the last / or \ and takes everything after it
+  return path.split(/[\\/]/).pop() || '';
+};

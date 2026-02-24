@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"time"
@@ -121,4 +122,11 @@ func GetAvailableDriveLetter() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("no available drive letters")
+}
+
+// SplitPath splits a full path into directory and filename
+func SplitPath(fullPath string) (directory string, filename string) {
+	directory = filepath.Dir(fullPath)
+	filename = filepath.Base(fullPath)
+	return directory, filename
 }

@@ -18,25 +18,6 @@ func newError(err error) error {
 	return fmt.Errorf("[EXCEL]: %w", err)
 }
 
-func SaveExcelFile(f *excelize.File) error {
-	// force reevaluate all formulas before saving
-	t := true
-	f.SetCalcProps(&excelize.CalcPropsOptions{FullCalcOnLoad: &t, ForceFullCalc: &t})
-
-	defer func() {
-		if err := f.Close(); err != nil {
-			fmt.Println(err)
-		}
-	}()
-
-	err := f.Save()
-	if err != nil {
-		return newError(err)
-	}
-
-	return nil
-}
-
 func SaveAsExcelFile(f *excelize.File, outputDir string, filename string) (string, error) {
 	// force reevaluate all formulas before saving
 	t := true
@@ -74,6 +55,13 @@ func SaveAsExcelFile(f *excelize.File, outputDir string, filename string) (strin
 		}
 	}
 	return outputPath, nil
+}
+
+func SaveExcelFile(f *excelize.File) (string, error) {
+	// long path workaround for windows
+	outputDir, filename := utils.SplitPath(f.Path)
+	return SaveAsExcelFile(f, outputDir, strings.TrimSuffix(filename, filepath.Ext(filename)))
+
 }
 
 func CreateExcelFile(templatePath string, data map[string]string) (*excelize.File, error) {

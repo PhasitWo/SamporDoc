@@ -222,9 +222,9 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 	if err != nil {
 		return logger.NewErrorAndLog(err, "SaveOuputReceiptFile")
 	}
-	logger.Log("SaveOuputReceiptFile", params.OutputDir, params.Filename)
+	logger.Log("SaveOuputReceiptFile", outputFilePath)
 
-	err = controlFile.Save()
+	_, err = excel.SaveExcelFile(controlFile)
 	if err != nil {
 		return logger.NewErrorAndLog(err, "SaveReceiptControlFile")
 	}
@@ -450,9 +450,9 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 	if err != nil {
 		return logger.NewErrorAndLog(err, "SaveOuputProcurementFile")
 	}
-	logger.Log("SaveOuputProcurementFile", params.OutputDir, params.Filename)
+	logger.Log("SaveOuputProcurementFile", outputFilePath)
 
-	err = controlFile.Save()
+	_, err = excel.SaveExcelFile(controlFile)
 	if err != nil {
 		return logger.NewErrorAndLog(err, "SaveProcurementControlFile")
 	}
@@ -503,14 +503,14 @@ func (a *App) GetBookOrderFromDataSourceFile(filePath string) (excel.BookOrder, 
 }
 
 func (a *App) AutoMoveBookOrder(procurementFilepath string, bookOrderFilePath string) error {
-	logger := log.NewSingleLog(a.repo)
+	logger := log.NewUnitOfLog(a.repo)
 	f, err := excel.AutoMoveBookOrder(procurementFilepath, bookOrderFilePath)
 	if err != nil {
 		return logger.NewErrorAndLog(err, "AutoMoveBookOrder")
 	}
 	logger.Log("AutoMoveBookOrder", procurementFilepath, bookOrderFilePath)
 
-	err = excel.SaveExcelFile(f)
+	_, err = excel.SaveExcelFile(f)
 	if err != nil {
 		return logger.NewErrorAndLog(err, "SaveExcelFile")
 	}

@@ -250,7 +250,6 @@ export default function CreateReceiptPage() {
           onChange={handleShopChange}
           value={selectedShop?.slug}
         />
-        {receiptFormPath}
         <ErrorAlertCard
           messages={[
             selectedShop &&

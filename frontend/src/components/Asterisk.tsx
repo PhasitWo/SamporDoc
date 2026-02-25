@@ -3,7 +3,7 @@ import { cn } from '../utils';
 
 export default function Asterisk({ className, ...rest }: ComponentProps<'span'>) {
   return (
-    <span className={cn('text-red-500', className)} {...rest}>
+    <span className={cn('text-red-500 font-bold', className)} {...rest}>
       *
     </span>
   );

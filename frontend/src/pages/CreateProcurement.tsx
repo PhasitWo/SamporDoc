@@ -241,7 +241,8 @@ export default function CreateProcurementPage() {
       });
       message.destroy();
       useAppStore.getState().fetchCustomers();
-      message.success('สร้างไฟล์จัดซื้อจัดจ้างสำเร็จ!', 3, WindowReload);
+      navigate('/');
+      message.success('สร้างไฟล์จัดซื้อจัดจ้างสำเร็จ!', 3);
       // refetch
     } catch (err: any) {
       showBoundary(err);

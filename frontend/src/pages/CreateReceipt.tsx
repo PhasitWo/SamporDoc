@@ -70,8 +70,8 @@ export default function CreateReceiptPage() {
   );
 
   const [receiptType, setReceiptType] = useState<'MAIN' | 'SEC'>('MAIN');
-  const [receiptFormPath, setReceiptFormPath] = useState<string | null>(null);
-  const [receiptControlPath, setReceiptControlPath] = useState<string | null>(null);
+  const [receiptFormPath, setReceiptFormPath] = useState<string | null | undefined>(undefined);
+  const [receiptControlPath, setReceiptControlPath] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
     (async () => {
@@ -88,8 +88,8 @@ export default function CreateReceiptPage() {
           setData({ ...data, receiptNO: String(nextNumber) });
         }
       } else {
-        setReceiptFormPath(null);
-        setReceiptControlPath(null);
+        setReceiptFormPath(undefined);
+        setReceiptControlPath(undefined);
       }
     })();
   }, [selectedShop, receiptType]);
@@ -190,7 +190,8 @@ export default function CreateReceiptPage() {
       message.destroy();
       // refetch
       useAppStore.getState().fetchCustomers();
-      message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!', 3, WindowReload);
+      navigate('/');
+      message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!', 3);
     } catch (err: any) {
       showBoundary(err);
     } finally {
@@ -233,10 +234,7 @@ export default function CreateReceiptPage() {
         </label>
         <div className="flex gap-1">
           <Input readOnly value={data.saveDir} onClick={handleChooseDir} />
-          <Button
-            type="default"
-            onClick={handleChooseDir}
-          >
+          <Button type="default" onClick={handleChooseDir}>
             เลือก
           </Button>
         </div>
@@ -252,13 +250,14 @@ export default function CreateReceiptPage() {
           onChange={handleShopChange}
           value={selectedShop?.slug}
         />
+        {receiptFormPath}
         <ErrorAlertCard
           messages={[
             selectedShop &&
-              !receiptFormPath &&
+              receiptFormPath === null &&
               `ขาดไฟล์ต้นแบบใบเสร็จรับเงิน ${receiptType === 'MAIN' ? '(เล่มหลัก)' : '(เล่มรอง)'} `,
             selectedShop &&
-              !receiptControlPath &&
+              receiptControlPath === null &&
               `ขาดไฟล์สมุดคุมใบเสร็จรับเงิน ${receiptType === 'MAIN' ? '(เล่มหลัก)' : '(เล่มรอง)'} `,
           ]}
           action={
@@ -325,7 +324,12 @@ export default function CreateReceiptPage() {
         </label>
         <AutoComplete<string>
           allowClear
-          options={[{ value: 'ค่าวัสดุสำนักงาน' }, { value: 'ค่าวัสดุการศึกษา' }, { value: 'อื่นๆ โปรดระบุ', disabled: true }]}
+          options={[
+            { value: 'ค่าวัสดุสำนักงาน' },
+            { value: 'ค่าวัสดุการศึกษา' },
+            { value: 'ค่าหนังสือเรียน' },
+            { value: 'อื่นๆ โปรดระบุ', disabled: true },
+          ]}
           onChange={(v) => setData({ ...data, detail: v })}
         />
       </InputContainer>

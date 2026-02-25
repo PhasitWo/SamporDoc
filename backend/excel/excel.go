@@ -4,6 +4,7 @@ import (
 	"SamporDoc/backend/utils"
 	"fmt"
 	"maps"
+	"math"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -190,7 +191,6 @@ func ShowOnlySheetNames(f *excelize.File, sheetNames ...string) (*excelize.File,
 	return f, nil
 }
 
-// find maximun number regardless of gap
 func GetNextControlNumber(controlFilePath string) (int, error) {
 	f, err := excelize.OpenFile(controlFilePath)
 	if err != nil {
@@ -204,9 +204,10 @@ func GetNextControlNumber(controlFilePath string) (int, error) {
 	const startRow = 3
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
 	rows, err := f.Rows(activeSheetName)
-	// find last row
+
+	// collect all number
 	rowCoodinate := 0
-	maxNO := 0
+	numSlice := []int{}
 	for rows.Next() {
 		rowCoodinate++
 		if rowCoodinate < startRow {
@@ -219,12 +220,35 @@ func GetNextControlNumber(controlFilePath string) (int, error) {
 		if len(row) == 0 || strings.TrimSpace(row[0]) == "" {
 			continue
 		}
-		maxNO, err = strconv.Atoi(strings.TrimSpace(row[0]))
+		NO, err := strconv.Atoi(strings.TrimSpace(row[0]))
 		if err != nil {
 			return -1, newError(err)
 		}
+		if NO > 0 {
+			numSlice = append(numSlice, NO)
+		}
 	}
-	return maxNO + 1, nil
+	if len(numSlice) == 0 {
+		return 1, nil
+	}
+	// sort asc
+	slices.SortFunc(numSlice, func(a int, b int) int {
+		return a - b
+	})
+	candidateNo := -1
+	// determine next number
+	for i := range math.MaxInt {
+		expected := i + 1
+		if i >= len(numSlice) {
+			candidateNo = expected
+			break
+		}
+		if numSlice[i] != expected {
+			candidateNo = expected
+			break
+		}
+	}
+	return candidateNo, nil
 }
 
 type BookOrder = []PublisherItem

@@ -15,6 +15,9 @@ import ErrorFallback from './pages/ErrorFallback';
 import { useShowBoundary } from './utils';
 import CreateProcurement from './pages/CreateProcurement';
 import Automove from './pages/Automove';
+import { HomeOutlined } from '@ant-design/icons';
+import Home from './pages/Home';
+import { primaryColorMap } from './constants';
 
 dayjs.locale('th');
 dayjs.extend(buddhistEra);
@@ -36,12 +39,6 @@ const globalBuddhistLocale: typeof thTH = {
     ...thTH.DatePicker!,
     lang: buddhistLocale.lang,
   },
-};
-
-const primaryColorMap: Record<string, string | undefined> = {
-  '/': '#00b96b',
-  '/createProcurement': '#e68415',
-  '/automove': '#f24141',
 };
 
 const AppLayout = () => {
@@ -77,7 +74,8 @@ const AppLayout = () => {
           <Menu
             mode="horizontal"
             items={[
-              { key: '/', label: 'สร้างใบเสร็จรับเงิน' },
+              { key: '/', itemIcon: <HomeOutlined /> },
+              { key: '/createReceipt', label: 'สร้างใบเสร็จรับเงิน' },
               { key: '/createProcurement', label: 'สร้างจัดซื้อจัดจ้าง' },
               { key: '/automove', label: 'Auto Move' },
               { key: '/setting', label: 'ตั้งค่า' },
@@ -128,7 +126,8 @@ function MyApp() {
         <App>
           <Routes>
             <Route element={<AppLayout />}>
-              <Route index element={<CreateReceipt />} />
+              <Route index element={<Home />} />
+              <Route path="/createReceipt" element={<CreateReceipt />} />
               <Route path="/createProcurement" element={<CreateProcurement />} />
               <Route path="/automove" element={<Automove />} />
               <Route path="/setting" element={<Setting />} />

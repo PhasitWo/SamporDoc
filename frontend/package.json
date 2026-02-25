@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
     "antd": "^6.1.4",
     "dayjs": "^1.11.19",
     "rc-picker": "^4.11.3",

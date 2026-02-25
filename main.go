@@ -35,7 +35,7 @@ func main() {
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:            "SamporDoc " + version,
-		Width:            800,
+		Width:            700,
 		Height:           700,
 		DisableResize:    true,
 		Assets:           assets,

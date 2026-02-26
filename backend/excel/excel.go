@@ -330,18 +330,6 @@ func GetBookOrderDataFromFile(filepath string) (BookOrder, error) {
 	return data, nil
 }
 
-type SortRule struct {
-	Keyword string
-	Level   int
-}
-
-var sortRules = []SortRule{
-	{"นิทาน", 0}, {"อนุบาล", 1},
-	{"อ.1", 2}, {"อ.2", 3}, {"อ.3", 4},
-	{"ป.1", 5}, {"ป.2", 6}, {"ป.3", 7}, {"ป.4", 8}, {"ป.5", 9}, {"ป.6", 10},
-	{"ม.1", 11}, {"ม.2", 12}, {"ม.3", 13}, {"ม.4", 14}, {"ม.5", 15}, {"ม.6", 16},
-}
-
 func WriteBookOrder(f *excelize.File, sheetName string, bookOrder BookOrder) (*excelize.File, error) {
 	idx, err := f.GetSheetIndex(sheetName)
 	if idx == -1 || err != nil {
@@ -367,14 +355,31 @@ func WriteBookOrder(f *excelize.File, sheetName string, bookOrder BookOrder) (*e
 	return f, nil
 }
 
+type SortRule struct {
+	Keyword string
+	Level   int
+}
+
+var sortRules = []SortRule{
+	{"นิทาน", 0}, {"อนุบาล", 1},
+	{"อ.1", 2}, {"อ.2", 3}, {"อ.3", 4},
+	{"ป.1", 5}, {"ป.2", 6}, {"ป.3", 7}, {"ป.4", 8}, {"ป.5", 9}, {"ป.6", 10},
+	{"ม.1", 11}, {"ม.2", 12}, {"ม.3", 13}, {"ม.4", 14}, {"ม.5", 15}, {"ม.6", 16},
+	{"ม.4-6", 17},
+}
+
 func getSortLevel(name string) int {
 	cleanName := strings.ReplaceAll(name, " ", "")
+	lastLevel := 9999
+	lastIndex := -1
 	for _, rule := range sortRules {
-		if strings.Contains(cleanName, rule.Keyword) {
-			return rule.Level
+		idx := strings.LastIndex(cleanName, rule.Keyword)
+		if idx != -1 && idx > lastIndex {
+			lastIndex = idx
+			lastLevel = rule.Level
 		}
 	}
-	return 9999
+	return lastLevel
 }
 
 func SortBookItemArray(items *[]BookItem) {

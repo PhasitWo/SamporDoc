@@ -1,7 +1,7 @@
 import { Input, Button, AutoComplete, Select, DatePicker, App } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { model } from '../../wailsjs/go/models';
-import { GetNextControlNumber, OpenDirectoryDialog, CreateReceipt } from '../../wailsjs/go/main/App';
+import { GetNextControlNumber, OpenDirectoryDialog, CreateReceipt, CMDOpenFile } from '../../wailsjs/go/main/App';
 import type { DefaultOptionType } from 'antd/es/select';
 import { Dayjs } from 'dayjs';
 import ErrorAlertCard from '../components/ErrorAlertCard';
@@ -39,7 +39,7 @@ interface FormData {
 
 export default function CreateReceiptPage() {
   const navigate = useNavigate();
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const { showBoundary } = useShowBoundary();
   // form
   const [data, setData] = useState<FormData>({
@@ -173,7 +173,7 @@ export default function CreateReceiptPage() {
 
       setIsLoading(true);
       message.loading('สร้างไฟล์ใบเสร็จรับเงิน...');
-      await CreateReceipt({
+      const outputPath = await CreateReceipt({
         TemplatePath: receiptFormPath,
         Filename: data.filename.trim(),
         OutputDir: data.saveDir,
@@ -191,7 +191,16 @@ export default function CreateReceiptPage() {
       // refetch
       useAppStore.getState().fetchCustomers();
       navigate('/');
-      message.success('สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!', 3);
+      notification.success({
+        title: 'สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!',
+        duration: 20,
+        placement: 'top',
+        description: (
+          <Button color="green" variant="outlined" onClick={() => CMDOpenFile(outputPath)}>
+            เปิดไฟล์
+          </Button>
+        ),
+      });
     } catch (err: any) {
       showBoundary(err);
     } finally {

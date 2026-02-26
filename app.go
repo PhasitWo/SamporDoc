@@ -10,8 +10,6 @@ import (
 	"SamporDoc/backend/utils"
 	"context"
 	"fmt"
-	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -67,21 +65,9 @@ func (a *App) startup(ctx context.Context) {
 	}
 	if len(shops) == 0 {
 		seed.SeedShops(a.repo)
+	} else {
+		seed.SeedUpdateShops(a.repo)
 	}
-}
-
-func (a *App) CMDOpenFile(filePath string) error {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.Command("open", filePath)
-	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", filePath)
-	default:
-		// Fallback for other systems, e.g., Linux
-		cmd = exec.Command("xdg-open", filePath)
-	}
-	return cmd.Run()
 }
 
 // Binding
@@ -169,22 +155,22 @@ type CreateReceiptParams struct {
 	Amount       float64
 }
 
-func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
+func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err error) {
 	// for logging
 	logger := log.NewUnitOfLog(a.repo)
 	// 	process data
 	var receiptDate, deliveryDate *time.Time
 	if receiptDate, err = utils.ParseTime(params.ReceiptDate); err != nil {
-		return logger.NewErrorAndLog(err, "ParseTime(params.ReceiptDate)")
+		return outputPath, logger.NewErrorAndLog(err, "ParseTime(params.ReceiptDate)")
 	}
 	if deliveryDate, err = utils.ParseTime(params.DeliveryDate); err != nil {
-		return logger.NewErrorAndLog(err, "ParseTime(params.DeliveryDate)")
+		return outputPath, logger.NewErrorAndLog(err, "ParseTime(params.DeliveryDate)")
 	}
 
 	// get control number
 	realReceiptNo, err := a.GetNextControlNumber(params.ControlPath)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "GetNextControlNumber")
+		return outputPath, logger.NewErrorAndLog(err, "GetNextControlNumber")
 	}
 
 	// create excel file
@@ -200,7 +186,7 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 	}
 	excelFile, err := excel.CreateExcelFile(params.TemplatePath, receiptData.toExcelKeyValue())
 	if err != nil {
-		return logger.NewErrorAndLog(err, "CreateReceiptFile")
+		return outputPath, logger.NewErrorAndLog(err, "CreateReceiptFile")
 	}
 	logger.Log("CreateReceiptFile", params.TemplatePath, receiptData)
 
@@ -213,20 +199,20 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 	}
 	controlFile, err := excel.WriteControlFile(params.ControlPath, controlData)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "WriteReceiptControlFile")
+		return outputPath, logger.NewErrorAndLog(err, "WriteReceiptControlFile")
 	}
 	logger.Log("WriteReceiptControlFile", params.ControlPath, controlData)
 
 	// save
-	outputFilePath, err := excel.SaveAsExcelFile(excelFile, params.OutputDir, params.Filename)
+	outputPath, err = excel.SaveAsExcelFile(excelFile, params.OutputDir, params.Filename)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "SaveOuputReceiptFile")
+		return outputPath, logger.NewErrorAndLog(err, "SaveOuputReceiptFile")
 	}
-	logger.Log("SaveOuputReceiptFile", outputFilePath)
+	logger.Log("SaveOuputReceiptFile", outputPath)
 
 	_, err = excel.SaveExcelFile(controlFile)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "SaveReceiptControlFile")
+		return outputPath, logger.NewErrorAndLog(err, "SaveReceiptControlFile")
 	}
 	logger.Log("SaveReceiptControlFile", controlFile.Path)
 
@@ -241,11 +227,11 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (err error) {
 	}
 
 	// open file
-	err = a.CMDOpenFile(outputFilePath)
+	err = a.CMDOpenFile(outputPath)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "CMDOpenReceiptFile")
+		return outputPath, logger.NewErrorAndLog(err, "CMDOpenReceiptFile")
 	}
-	return nil
+	return outputPath, nil
 }
 
 type ProcurementData struct {
@@ -349,13 +335,13 @@ type CreateProcurementParams struct {
 	BossName              *string // nullable
 }
 
-func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
+func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath string, err error) {
 	// for logging
 	logger := log.NewUnitOfLog(a.repo)
 	// 	process data
 	var deliveryDate *time.Time
 	if deliveryDate, err = utils.ParseTime(params.DeliveryDate); err != nil {
-		return logger.NewErrorAndLog(err, "ParseTime(params.DeliveryDate)")
+		return outputPath, logger.NewErrorAndLog(err, "ParseTime(params.DeliveryDate)")
 	}
 	var headCheckerName, checker1Name, checker2Name, objectName, headObjectName, bossName *string
 	emptyName := strings.Repeat(" ", 35)
@@ -381,7 +367,7 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 	// get control number
 	realDeliveryNo, err := a.GetNextControlNumber(params.ControlPath)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "GetNextControlNumber")
+		return outputPath, logger.NewErrorAndLog(err, "GetNextControlNumber")
 	}
 
 	// create excel file
@@ -402,7 +388,7 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 	}
 	excelFile, err := excel.CreateExcelFile(params.TemplatePath, procurementData.toExcelKeyValue())
 	if err != nil {
-		return logger.NewErrorAndLog(err, "CreateProcurementFile")
+		return outputPath, logger.NewErrorAndLog(err, "CreateProcurementFile")
 	}
 	logger.Log("CreateProcurementFile", params.TemplatePath, procurementData)
 
@@ -410,11 +396,11 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 	if params.BookOrderPath != nil {
 		bookOrder, err := excel.GetBookOrderDataFromFile(*params.BookOrderPath)
 		if err != nil {
-			return logger.NewErrorAndLog(err, "GetBookOrderDataFromFile")
+			return outputPath, logger.NewErrorAndLog(err, "GetBookOrderDataFromFile")
 		}
 		excelFile, err = excel.WriteBookOrder(excelFile, "data", bookOrder)
 		if err != nil {
-			return logger.NewErrorAndLog(err, "WriteBookOrder")
+			return outputPath, logger.NewErrorAndLog(err, "WriteBookOrder")
 		}
 		logger.Log("WriteBookOrder", bookOrder)
 	}
@@ -423,12 +409,12 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 	case ONLY_DELIVERY_NOTE:
 		excelFile, err = excel.ShowOnlySheetNames(excelFile, "ใบส่งของ")
 		if err != nil {
-			return logger.NewErrorAndLog(err, "ShowOnlySheetNames(ONLY_DELIVERY_NOTE)")
+			return outputPath, logger.NewErrorAndLog(err, "ShowOnlySheetNames(ONLY_DELIVERY_NOTE)")
 		}
 	case ONLY_QUOTATION:
 		excelFile, err = excel.ShowOnlySheetNames(excelFile, "ใบเสนอราคา", "แนบใบเสนอราคา")
 		if err != nil {
-			return logger.NewErrorAndLog(err, "ShowOnlySheetNames(ONLY_QUOTATION)")
+			return outputPath, logger.NewErrorAndLog(err, "ShowOnlySheetNames(ONLY_QUOTATION)")
 		}
 	}
 
@@ -441,20 +427,20 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 	}
 	controlFile, err := excel.WriteControlFile(params.ControlPath, controlData)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "WriteProcurementControlFile")
+		return outputPath, logger.NewErrorAndLog(err, "WriteProcurementControlFile")
 	}
 	logger.Log("WriteProcurementControlFile", params.ControlPath, controlData)
 
 	// save
-	outputFilePath, err := excel.SaveAsExcelFile(excelFile, params.OutputDir, params.Filename)
+	outputPath, err = excel.SaveAsExcelFile(excelFile, params.OutputDir, params.Filename)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "SaveOuputProcurementFile")
+		return outputPath, logger.NewErrorAndLog(err, "SaveOuputProcurementFile")
 	}
-	logger.Log("SaveOuputProcurementFile", outputFilePath)
+	logger.Log("SaveOuputProcurementFile", outputPath)
 
 	_, err = excel.SaveExcelFile(controlFile)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "SaveProcurementControlFile")
+		return outputPath, logger.NewErrorAndLog(err, "SaveProcurementControlFile")
 	}
 	logger.Log("SaveProcurementControlFile", controlFile.Path)
 
@@ -485,11 +471,11 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (err error) {
 	}
 
 	// open file
-	err = a.CMDOpenFile(outputFilePath)
+	err = a.CMDOpenFile(outputPath)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "CMDOpenProcurementFile")
+		return outputPath, logger.NewErrorAndLog(err, "CMDOpenProcurementFile")
 	}
-	return nil
+	return outputPath, nil
 }
 
 func (a *App) GetBookOrderFromDataSourceFile(filePath string) (excel.BookOrder, error) {

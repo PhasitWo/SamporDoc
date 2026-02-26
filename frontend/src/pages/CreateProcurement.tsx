@@ -2,13 +2,13 @@ import { Input, Button, AutoComplete, Select, DatePicker, App, Divider } from 'a
 import type { PickerRef } from 'rc-picker';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { excel, model } from '../../wailsjs/go/models';
-import { WindowReload } from '../../wailsjs/runtime/runtime';
 import {
   GetNextControlNumber,
   OpenDirectoryDialog,
   CreateProcurement,
   OpenExcelFileDialog,
   GetBookOrderFromDataSourceFile,
+  CMDOpenFile,
 } from '../../wailsjs/go/main/App';
 import type { DefaultOptionType } from 'antd/es/select';
 import { Dayjs } from 'dayjs';
@@ -60,7 +60,7 @@ interface FormData {
 
 export default function CreateProcurementPage() {
   const navigate = useNavigate();
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const { showBoundary } = useShowBoundary();
   // form
   const [data, setData] = useState<FormData>({
@@ -153,9 +153,6 @@ export default function CreateProcurementPage() {
     if (selectedShop == null || !selectedShop.procurementFormPath || !selectedShop.procurementControlPath) {
       return false;
     }
-    if (data.amount <= 0) {
-      return false;
-    }
     if (
       data.filename.trim() === '' ||
       data.saveDir === '' ||
@@ -209,7 +206,6 @@ export default function CreateProcurementPage() {
         data.filename.trim() === '' ||
         data.saveDir === '' ||
         data.deliveryNO === '' ||
-        data.amount <= 0 ||
         data.customerName.trim() === '' ||
         data.buy === ''
       ) {
@@ -218,7 +214,7 @@ export default function CreateProcurementPage() {
 
       setIsLoading(true);
       message.loading('สร้างไฟล์จัดซื้อจัดจ้าง...');
-      await CreateProcurement({
+      const outputPath = await CreateProcurement({
         TemplatePath: selectedShop.procurementFormPath,
         ControlPath: selectedShop.procurementControlPath,
         Filename: data.filename.trim(),
@@ -242,7 +238,16 @@ export default function CreateProcurementPage() {
       message.destroy();
       useAppStore.getState().fetchCustomers();
       navigate('/');
-      message.success('สร้างไฟล์จัดซื้อจัดจ้างสำเร็จ!', 3);
+      notification.success({
+        title: 'สร้างจัดซื้อจัดจ้างสำเร็จ!',
+        duration: 20,
+        placement: 'top',
+        description: (
+          <Button color="green" variant="outlined" onClick={() => CMDOpenFile(outputPath)}>
+            เปิดไฟล์
+          </Button>
+        ),
+      });
       // refetch
     } catch (err: any) {
       showBoundary(err);
@@ -344,10 +349,7 @@ export default function CreateProcurementPage() {
         <Input value={data.project} onChange={(e) => setData({ ...data, project: e.target.value })} />
       </InputContainer>
       <InputContainer>
-        <label>
-          จำนวนเงิน
-          <Asterisk />
-        </label>
+        <label>จำนวนเงิน</label>
         <Input
           type="number"
           value={data.amount}

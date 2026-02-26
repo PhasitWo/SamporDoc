@@ -1,19 +1,21 @@
-import { Button, Input, message } from 'antd';
+import { App, Button, Input } from 'antd';
 import FormContainer from '../components/FormContainer';
 import InputContainer from '../components/InputContainer';
 import { excel } from '../../wailsjs/go/models';
 import { useRef, useState } from 'react';
-import { AutoMoveBookOrder, GetBookOrderFromDataSourceFile, OpenExcelFileDialog } from '../../wailsjs/go/main/App';
+import { AutoMoveBookOrder, CMDOpenFile, GetBookOrderFromDataSourceFile, OpenExcelFileDialog } from '../../wailsjs/go/main/App';
 import { getFileName } from '../utils';
 import BookOrderTable from '../components/BookOrderTable';
 import Asterisk from '../components/Asterisk';
-import { WindowReload } from '../../wailsjs/runtime/runtime';
+import { useNavigate } from 'react-router';
 
 export default function Automove() {
   const [procurementFilePath, setProcurementFilePath] = useState<string>('');
   const [bookOrderData, setBookOrderData] = useState<{ filePath: string; data: excel.PublisherItem[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const { message, notification } = App.useApp();
+  const navigate = useNavigate();
 
   const handleChooseFile = async () => {
     const path = await OpenExcelFileDialog();
@@ -52,7 +54,17 @@ export default function Automove() {
       await AutoMoveBookOrder(procurementFilePath, bookOrderData.filePath);
       setTimeout(() => {
         message.destroy();
-        message.success('เขียนไฟล์สำเร็จ!', 3, WindowReload);
+        navigate('/');
+        notification.success({
+          title: 'ย้ายข้อมูลลงไฟล์จัดซื้อจัดจ้างสำเร็จ!',
+          duration: 20,
+          placement: 'top',
+          description: (
+            <Button color="green" variant="outlined" onClick={() => CMDOpenFile(procurementFilePath)}>
+              เปิดไฟล์
+            </Button>
+          ),
+        });
         setIsLoading(false);
       }, 500);
     } catch (err) {

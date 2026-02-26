@@ -14,12 +14,10 @@ import (
 //go:embed customers.csv
 var customersSeed []byte
 
-
 var DefaultShops []model.Shop = []model.Shop{
 	{Slug: "HJK", Name: "หจก.3พ.รุ่งเรืองศึกษาภัณฑ์", SortingLevel: 0},
 	{Slug: "BUM", Name: "ร้านบำเหน็จศึกษาภัณฑ์", SortingLevel: 5},
 }
-
 
 func SeedShops(repo *repository.Repo) {
 	fmt.Println("Start seeding shops...")
@@ -31,6 +29,12 @@ func SeedShops(repo *repository.Repo) {
 		}
 	}
 	fmt.Println("Finish seeding shops")
+}
+
+func SeedUpdateShops(repo *repository.Repo) {
+	fmt.Println("Start updating shops...")
+	repo.UpdateShopBySlug(&model.Shop{Name: "พี เอส ซัพพลาย", Slug: "BUM"})
+	fmt.Println("Finish updating shops")
 }
 
 func SeedCustomers(repo *repository.Repo) {
@@ -50,14 +54,14 @@ func SeedCustomers(repo *repository.Repo) {
 			panic(fmt.Errorf("insufficient column in customer.csv"))
 		}
 		customers = append(customers, model.Customer{
-			Name: record[0],
-			Address: utils.Ptr(record[1]),
+			Name:            record[0],
+			Address:         utils.Ptr(record[1]),
 			HeadCheckerName: utils.Ptr(record[2]),
-			Checker1Name: utils.Ptr(record[3]),
-			Checker2Name: utils.Ptr(record[4]),
-			ObjectName: utils.Ptr(record[5]),
-			HeadObjectName: utils.Ptr(record[6]),
-			BossName: utils.Ptr(record[7]),
+			Checker1Name:    utils.Ptr(record[3]),
+			Checker2Name:    utils.Ptr(record[4]),
+			ObjectName:      utils.Ptr(record[5]),
+			HeadObjectName:  utils.Ptr(record[6]),
+			BossName:        utils.Ptr(record[7]),
 		})
 	}
 

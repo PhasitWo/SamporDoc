@@ -30,6 +30,10 @@ export function GetBookOrderFromDataSourceFile(arg1) {
   return window['go']['main']['App']['GetBookOrderFromDataSourceFile'](arg1);
 }
 
+export function GetControlData(arg1, arg2) {
+  return window['go']['main']['App']['GetControlData'](arg1, arg2);
+}
+
 export function GetNextControlNumber(arg1) {
   return window['go']['main']['App']['GetNextControlNumber'](arg1);
 }

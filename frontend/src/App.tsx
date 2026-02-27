@@ -18,6 +18,7 @@ import Automove from './pages/Automove';
 import { HomeOutlined } from '@ant-design/icons';
 import Home from './pages/Home';
 import { primaryColorMap } from './constants';
+import Success from './pages/Success';
 
 dayjs.locale('th');
 dayjs.extend(buddhistEra);
@@ -131,6 +132,7 @@ function MyApp() {
               <Route path="/createProcurement" element={<CreateProcurement />} />
               <Route path="/automove" element={<Automove />} />
               <Route path="/setting" element={<Setting />} />
+              <Route path="/success" element={<Success />} />
             </Route>
           </Routes>
         </App>

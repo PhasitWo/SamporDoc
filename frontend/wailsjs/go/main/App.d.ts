@@ -18,6 +18,8 @@ export function GetAllShops():Promise<Array<model.Shop>>;
 
 export function GetBookOrderFromDataSourceFile(arg1:string):Promise<Array<excel.PublisherItem>>;
 
+export function GetControlData(arg1:string,arg2:number):Promise<excel.ControlDataWithRowCoordinate>;
+
 export function GetNextControlNumber(arg1:string):Promise<number>;
 
 export function OpenDirectoryDialog():Promise<string>;

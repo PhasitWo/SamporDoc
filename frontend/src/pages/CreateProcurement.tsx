@@ -1,262 +1,42 @@
-import { Input, Button, AutoComplete, Select, DatePicker, App, Divider } from 'antd';
-import type { PickerRef } from 'rc-picker';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { excel, model } from '../../wailsjs/go/models';
-import {
-  GetNextControlNumber,
-  OpenDirectoryDialog,
-  CreateProcurement,
-  OpenExcelFileDialog,
-  GetBookOrderFromDataSourceFile,
-  CMDOpenFile,
-} from '../../wailsjs/go/main/App';
-import type { DefaultOptionType } from 'antd/es/select';
-import { Dayjs } from 'dayjs';
+import { Input, Button, AutoComplete, Select, DatePicker, Divider, InputNumber } from 'antd';
 import ErrorAlertCard from '../components/ErrorAlertCard';
 import { useNavigate } from 'react-router';
 import InputContainer from '../components/InputContainer';
-import { useAppStore } from '../store/useAppStore';
 import Asterisk from '../components/Asterisk';
-import { getFileName, isValidWindowsFilename, useShowBoundary } from '../utils';
+import { cn, getFileName, isValidWindowsFilename } from '../utils';
 import FormContainer from '../components/FormContainer';
 import HiddenDatePicker from '../components/HiddenDatePicker';
 import BookOrderTable from '../components/BookOrderTable';
-
-interface ShopOptionType extends DefaultOptionType {
-  meta: model.Shop;
-}
-
-interface CustomerOptionType extends DefaultOptionType {
-  meta: model.Customer;
-  value: number;
-}
-
-type ProcurementOutputType = 'FULL' | 'ONLY_DELIVERY_NOTE' | 'ONLY_QUOTATION';
-
-interface ProcurementOutputTypeOptionType extends DefaultOptionType {
-  value: ProcurementOutputType;
-}
-
-interface FormData {
-  filename: string;
-  saveDir: string;
-  deliveryNO: string;
-  deliveryDate: Dayjs | null;
-  buy: string;
-  project: string;
-  amount: number;
-  procurementOutputType: ProcurementOutputType;
-  customerName: string;
-  address: string;
-  headCheckerName: string;
-  checker1Name: string;
-  checker2Name: string;
-  objectName: string;
-  headObjectName: string;
-  bossName: string;
-}
-
-// type QuantityType = 'LTE' | 'GT' | 'CUSTOM';
+import {
+  CustomerOptionType,
+  ProcurementOutputTypeOptionType,
+  ShopOptionType,
+  useCreateProcurement,
+} from '../hooks/useCreateProcurement';
+import SyncOutlined from '@ant-design/icons/lib/icons/SyncOutlined';
 
 export default function CreateProcurementPage() {
+  const {
+    data,
+    setData,
+    bookOrderData,
+    setBookOrderData,
+    isLoading,
+    selectedShop,
+    shopOptions,
+    handleShopChange,
+    selectedCustomer,
+    customerOptions,
+    handleCustomerChange,
+    handleChooseDir,
+    handleImportBookOrder,
+    handleSubmit,
+    readyToCreate,
+    hiddenPickerRef,
+    handleLoadNextNumber,
+  } = useCreateProcurement();
   const navigate = useNavigate();
-  const { message, notification } = App.useApp();
-  const { showBoundary } = useShowBoundary();
-  // form
-  const [data, setData] = useState<FormData>({
-    filename: '',
-    saveDir: '',
-    deliveryNO: '',
-    deliveryDate: null,
-    customerName: '',
-    address: '',
-    buy: '',
-    project: '',
-    amount: 0,
-    procurementOutputType: 'FULL',
-    headCheckerName: '',
-    checker1Name: '',
-    checker2Name: '',
-    objectName: '',
-    headObjectName: '',
-    bossName: '',
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [bookOrderData, setBookOrderData] = useState<{ filePath: string; data: excel.PublisherItem[] } | null>(null);
-  // shop
-  const [selectedShop, setSelectedShop] = useState<model.Shop | null>(null);
-  const shops = useAppStore((s) => s.shops);
-  const shopOptions = useMemo<ShopOptionType[]>(
-    () =>
-      shops.map<ShopOptionType>((s) => ({
-        value: s.slug,
-        label: s.name,
-        meta: s,
-      })),
-    [shops]
-  );
 
-  useEffect(() => {
-    (async () => {
-      setData({ ...data, deliveryNO: '' });
-      if (selectedShop && selectedShop.procurementControlPath) {
-        const nextNumber = await GetNextControlNumber(selectedShop.procurementControlPath);
-        setData({ ...data, deliveryNO: String(nextNumber) });
-      }
-    })();
-  }, [selectedShop]);
-
-  // customers
-  const [selectedCustomer, setSelectedCustomer] = useState<model.Customer | null>(null);
-  const customers = useAppStore((s) => s.customers);
-  const customerOptions = useMemo<CustomerOptionType[]>(
-    () =>
-      customers.map<CustomerOptionType>((c) => ({
-        value: c.ID,
-        label: `${c.name} (ID: ${c.ID})`,
-        meta: c,
-      })),
-    [customers]
-  );
-
-  const handleCustomerChange = (value: string, option?: CustomerOptionType | CustomerOptionType[]) => {
-    if (option && 'meta' in option && !Array.isArray(option)) {
-      setSelectedCustomer(option.meta);
-      setData({
-        ...data,
-        customerName: option.meta.name,
-        address: option.meta.address ?? '',
-        headCheckerName: option.meta.headCheckerName ?? '',
-        checker1Name: option.meta.checker1Name ?? '',
-        checker2Name: option.meta.checker2Name ?? '',
-        objectName: option.meta.objectName ?? '',
-        headObjectName: option.meta.headObjectName ?? '',
-        bossName: option.meta.bossName ?? '',
-      });
-    } else {
-      setSelectedCustomer(null);
-      setData({
-        ...data,
-        customerName: value,
-        address: '',
-        headCheckerName: '',
-        checker1Name: '',
-        checker2Name: '',
-        objectName: '',
-        headObjectName: '',
-        bossName: '',
-      });
-    }
-  };
-
-  const readyToCreate = useMemo<boolean>(() => {
-    if (selectedShop == null || !selectedShop.procurementFormPath || !selectedShop.procurementControlPath) {
-      return false;
-    }
-    if (
-      data.filename.trim() === '' ||
-      data.saveDir === '' ||
-      data.deliveryNO.trim() === '' ||
-      data.customerName.trim() === '' ||
-      data.buy.trim() === ''
-    ) {
-      return false;
-    }
-    return true;
-  }, [data, selectedShop]);
-
-  const handleChooseDir = async () => {
-    const path = await OpenDirectoryDialog();
-    if (path) {
-      setData({ ...data, saveDir: path });
-    }
-  };
-
-  const handleShopChange = (_: any, option?: ShopOptionType | ShopOptionType[]) => {
-    if (option && !Array.isArray(option)) {
-      setSelectedShop(option.meta);
-    } else {
-      setSelectedShop(null);
-    }
-  };
-
-  const handleImportBookOrder = async () => {
-    const filePath = await OpenExcelFileDialog();
-    if (filePath) {
-      message.loading('กำลังนำเข้าไฟล์...', 2);
-      try {
-        const bookOrder = await GetBookOrderFromDataSourceFile(filePath);
-        setTimeout(() => {
-          message.destroy();
-          setBookOrderData({ filePath, data: bookOrder });
-          message.success('นำเข้าไฟล์สำเร็จ!', 3);
-        }, 500);
-      } catch (err) {
-        message.error(`นำเข้าไฟล์ไม่สำเร็จ :${(err as Error).message}`, 10);
-      }
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      if (
-        !selectedShop ||
-        !selectedShop.procurementFormPath ||
-        !selectedShop.procurementControlPath ||
-        data.filename.trim() === '' ||
-        data.saveDir === '' ||
-        data.deliveryNO === '' ||
-        data.customerName.trim() === '' ||
-        data.buy === ''
-      ) {
-        return;
-      }
-
-      setIsLoading(true);
-      message.loading('สร้างไฟล์จัดซื้อจัดจ้าง...');
-      const outputPath = await CreateProcurement({
-        TemplatePath: selectedShop.procurementFormPath,
-        ControlPath: selectedShop.procurementControlPath,
-        Filename: data.filename.trim(),
-        OutputDir: data.saveDir,
-        DeliveryDate: data.deliveryDate?.toISOString(),
-        Buy: data.buy.trim(),
-        Project: data.project.trim() || undefined,
-        Amount: data.amount,
-        BookOrderPath: bookOrderData ? bookOrderData.filePath : undefined,
-        ProcurementOutputType: data.procurementOutputType,
-        CustomerName: data.customerName.trim(),
-        CustomerID: selectedCustomer?.ID,
-        Address: data.address.trim() || undefined,
-        HeadCheckerName: data.headCheckerName.trim() || undefined,
-        Checker1Name: data.checker1Name.trim() || undefined,
-        Checker2Name: data.checker2Name.trim() || undefined,
-        HeadObjectName: data.headObjectName.trim() || undefined,
-        ObjectName: data.objectName.trim() || undefined,
-        BossName: data.bossName.trim() || undefined,
-      });
-      message.destroy();
-      useAppStore.getState().fetchCustomers();
-      navigate('/');
-      notification.success({
-        title: 'สร้างจัดซื้อจัดจ้างสำเร็จ!',
-        duration: 20,
-        placement: 'top',
-        description: (
-          <Button color="green" variant="outlined" onClick={() => CMDOpenFile(outputPath)}>
-            เปิดไฟล์
-          </Button>
-        ),
-      });
-      // refetch
-    } catch (err: any) {
-      showBoundary(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const hiddenPickerRef = useRef<PickerRef>(null);
   return (
     <FormContainer>
       <HiddenDatePicker
@@ -316,7 +96,19 @@ export default function CreateProcurementPage() {
       <div className="flex flex-row w-full gap-2">
         <InputContainer>
           <label>เลขที่ใบส่งของ</label>
-          <Input readOnly value={data.deliveryNO} />
+          <div className="flex items-center relative">
+            <SyncOutlined
+              className={cn('absolute right-3 z-10 hover:scale-[1.2]', !selectedShop?.procurementControlPath && 'text-gray-200')}
+              onClick={handleLoadNextNumber}
+            />
+            <InputNumber<string | number>
+              value={data.deliveryNO}
+              min='1'
+              controls={false}
+              onChange={(value) => setData({ ...data, deliveryNO: String(value) })}
+              className="w-full"
+            />
+          </div>
         </InputContainer>
         <InputContainer>
           <label>ใบส่งของลงวันที่</label>
@@ -363,41 +155,6 @@ export default function CreateProcurementPage() {
         />
       </InputContainer>
       <Divider />
-      {/* <InputContainer>
-        <label>จำนวนรายการ</label>
-        <Radio.Group
-          vertical
-          options={[
-            { value: 'LTE', label: 'ไม่เกิน 11 รายการ' },
-            { value: 'GT', label: 'มากกว่า 11 รายการ' },
-            {
-              value: 'CUSTOM',
-              label:
-                quantityType === 'CUSTOM' ? (
-                  <Input
-                    placeholder="ระบุจำนวน"
-                    type="number"
-                    min={0}
-                    value={data.quantity}
-                    onChange={(e) =>
-                      setData({
-                        ...data,
-                        quantity: isNaN(e.target.valueAsNumber) ? 0 : e.target.valueAsNumber,
-                      })
-                    }
-                  />
-                ) : (
-                  'ระบุจำนวน'
-                ),
-            },
-          ]}
-          defaultValue="LTE"
-          value={quantityType}
-          onChange={(e) => {
-            setQuantityType(e.target.value);
-          }}
-        />
-      </InputContainer> */}
       <InputContainer>
         <label>รูปแบบ</label>
         <Select<string, ProcurementOutputTypeOptionType>

@@ -1,215 +1,38 @@
-import { Input, Button, AutoComplete, Select, DatePicker, App } from 'antd';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { model } from '../../wailsjs/go/models';
-import { GetNextControlNumber, OpenDirectoryDialog, CreateReceipt, CMDOpenFile } from '../../wailsjs/go/main/App';
-import type { DefaultOptionType } from 'antd/es/select';
-import { Dayjs } from 'dayjs';
+import { Input, Button, AutoComplete, Select, DatePicker, InputNumber } from 'antd';
 import ErrorAlertCard from '../components/ErrorAlertCard';
 import { useNavigate } from 'react-router';
 import InputContainer from '../components/InputContainer';
-import { useAppStore } from '../store/useAppStore';
 import Asterisk from '../components/Asterisk';
-import { isValidWindowsFilename, useShowBoundary } from '../utils';
-import { WindowReload } from '../../wailsjs/runtime/runtime';
+import { cn, isValidWindowsFilename } from '../utils';
 import FormContainer from '../components/FormContainer';
-import { PickerRef } from 'rc-picker';
 import HiddenDatePicker from '../components/HiddenDatePicker';
-
-interface ShopOptionType extends DefaultOptionType {
-  meta: model.Shop;
-}
-
-interface CustomerOptionType extends DefaultOptionType {
-  meta: model.Customer;
-  value: number;
-}
-
-interface FormData {
-  filename: string;
-  saveDir: string;
-  receiptNO: string;
-  receiptDate: Dayjs | null;
-  customerName: string;
-  address: string;
-  detail: string;
-  deliveryNO: string;
-  deliveryDate: Dayjs | null;
-  amount: number;
-}
+import { CustomerOptionType, ShopOptionType, useCreateReceipt } from '../hooks/useCreateReceipt';
+import SyncOutlined from '@ant-design/icons/lib/icons/SyncOutlined';
 
 export default function CreateReceiptPage() {
   const navigate = useNavigate();
-  const { message, notification } = App.useApp();
-  const { showBoundary } = useShowBoundary();
-  // form
-  const [data, setData] = useState<FormData>({
-    filename: '',
-    saveDir: '',
-    receiptNO: '',
-    receiptDate: null,
-    customerName: '',
-    address: '',
-    detail: '',
-    deliveryNO: '',
-    deliveryDate: null,
-    amount: 0,
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    data,
+    setData,
+    isLoading,
+    receiptType,
+    receiptFormPath,
+    receiptControlPath,
+    setReceiptType,
+    selectedShop,
+    shopOptions,
+    handleShopChange,
+    selectedCustomer,
+    customerOptions,
+    handleCustomerChange,
+    handleChooseDir,
+    handleSubmit,
+    readyToCreate,
+    hiddenReceiptDateRef,
+    hiddenDeliveryDateRef,
+    handleLoadNextNumber,
+  } = useCreateReceipt();
 
-  // shop
-  const [selectedShop, setSelectedShop] = useState<model.Shop | null>(null);
-  const shops = useAppStore((s) => s.shops);
-  const shopOptions = useMemo<ShopOptionType[]>(
-    () =>
-      shops.map<ShopOptionType>((s) => ({
-        value: s.slug,
-        label: s.name,
-        meta: s,
-      })),
-    [shops]
-  );
-
-  const [receiptType, setReceiptType] = useState<'MAIN' | 'SEC'>('MAIN');
-  const [receiptFormPath, setReceiptFormPath] = useState<string | null | undefined>(undefined);
-  const [receiptControlPath, setReceiptControlPath] = useState<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    (async () => {
-      setData({ ...data, receiptNO: '' });
-      if (selectedShop) {
-        setReceiptFormPath(
-          receiptType === 'MAIN' ? (selectedShop.receiptMainFormPath ?? null) : (selectedShop.receiptSecFormPath ?? null)
-        );
-        const controlPath =
-          receiptType === 'MAIN' ? (selectedShop.receiptMainControlPath ?? null) : (selectedShop.receiptSecControlPath ?? null);
-        setReceiptControlPath(controlPath);
-        if (controlPath) {
-          const nextNumber = await GetNextControlNumber(controlPath);
-          setData({ ...data, receiptNO: String(nextNumber) });
-        }
-      } else {
-        setReceiptFormPath(undefined);
-        setReceiptControlPath(undefined);
-      }
-    })();
-  }, [selectedShop, receiptType]);
-
-  // customers
-  const [selectedCustomer, setSelectedCustomer] = useState<model.Customer | null>(null);
-  const customers = useAppStore((s) => s.customers);
-  const customerOptions = useMemo<CustomerOptionType[]>(
-    () =>
-      customers.map<CustomerOptionType>((c) => ({
-        value: c.ID,
-        label: `${c.name} (ID: ${c.ID})`,
-        meta: c,
-      })),
-    [customers]
-  );
-
-  const handleCustomerChange = (value: string, option?: CustomerOptionType | CustomerOptionType[]) => {
-    if (option && 'meta' in option && !Array.isArray(option)) {
-      setSelectedCustomer(option.meta);
-      setData({
-        ...data,
-        customerName: option.meta.name,
-        address: option.meta.address ?? '',
-      });
-    } else {
-      setSelectedCustomer(null);
-      setData({ ...data, customerName: value, address: '' });
-    }
-  };
-
-  const readyToCreate = useMemo<boolean>(() => {
-    if (selectedShop == null || !receiptFormPath || !receiptControlPath) {
-      return false;
-    }
-    if (data.amount <= 0) {
-      return false;
-    }
-    if (
-      data.filename.trim() === '' ||
-      data.saveDir === '' ||
-      data.receiptNO.trim() === '' ||
-      data.customerName.trim() === '' ||
-      data.detail.trim() === ''
-    ) {
-      return false;
-    }
-    return true;
-  }, [data, selectedShop]);
-
-  const handleChooseDir = async () => {
-    const path = await OpenDirectoryDialog();
-    if (path) {
-      setData({ ...data, saveDir: path });
-    }
-  };
-
-  const handleShopChange = (_: any, option?: ShopOptionType | ShopOptionType[]) => {
-    if (option && !Array.isArray(option)) {
-      setSelectedShop(option.meta);
-    } else {
-      setSelectedShop(null);
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      if (
-        !selectedShop ||
-        !receiptFormPath ||
-        !receiptControlPath ||
-        data.filename.trim() === '' ||
-        data.saveDir === '' ||
-        data.receiptNO === '' ||
-        data.amount <= 0 ||
-        data.customerName.trim() === '' ||
-        data.detail.trim() === ''
-      ) {
-        return;
-      }
-
-      setIsLoading(true);
-      message.loading('สร้างไฟล์ใบเสร็จรับเงิน...');
-      const outputPath = await CreateReceipt({
-        TemplatePath: receiptFormPath,
-        Filename: data.filename.trim(),
-        OutputDir: data.saveDir,
-        CustomerName: data.customerName.trim(),
-        CustomerID: selectedCustomer?.ID,
-        Amount: data.amount,
-        ControlPath: receiptControlPath,
-        Address: data.address.trim() || undefined,
-        DeliveryNO: data.deliveryNO.trim() || undefined,
-        Detail: data.detail.trim(),
-        DeliveryDate: data.deliveryDate?.toISOString(),
-        ReceiptDate: data.receiptDate?.toISOString(),
-      });
-      message.destroy();
-      // refetch
-      useAppStore.getState().fetchCustomers();
-      navigate('/');
-      notification.success({
-        title: 'สร้างไฟล์ใบเสร็จรับเงินสำเร็จ!',
-        duration: 20,
-        placement: 'top',
-        description: (
-          <Button color="green" variant="outlined" onClick={() => CMDOpenFile(outputPath)}>
-            เปิดไฟล์
-          </Button>
-        ),
-      });
-    } catch (err: any) {
-      showBoundary(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const hiddenReceiptDateRef = useRef<PickerRef>(null);
-  const hiddenDeliveryDateRef = useRef<PickerRef>(null);
   return (
     <FormContainer>
       <HiddenDatePicker
@@ -290,7 +113,19 @@ export default function CreateReceiptPage() {
         </InputContainer>
         <InputContainer>
           <label>เลขที่ใบเสร็จ</label>
-          <Input readOnly value={data.receiptNO} />
+          <div className="flex items-center relative">
+            <SyncOutlined
+              className={cn('absolute right-3 z-10 hover:scale-[1.2]', !selectedShop?.procurementControlPath && 'text-gray-200')}
+              onClick={handleLoadNextNumber}
+            />
+            <InputNumber<string | number>
+              value={data.receiptNO}
+              min="1"
+              controls={false}
+              onChange={(value) => setData({ ...data, receiptNO: String(value) })}
+              className="w-full"
+            />
+          </div>
         </InputContainer>
         <InputContainer>
           <label>ใบเสร็จลงวันที่</label>

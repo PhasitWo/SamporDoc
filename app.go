@@ -87,6 +87,10 @@ func (a *App) GetNextControlNumber(controlFilePath string) (int, error) {
 	return excel.GetNextControlNumber(controlFilePath)
 }
 
+func (a *App) GetControlData(controlFilePath string, NO int) (*excel.ControlDataWithRowCoordinate, error) {
+	return excel.GetControlData(controlFilePath, NO)
+}
+
 func (a *App) OpenDirectoryDialog() (string, error) {
 	return wailsRuntime.OpenDirectoryDialog(a.ctx, wailsRuntime.OpenDialogOptions{})
 }
@@ -141,18 +145,19 @@ func (r ReceiptData) toExcelKeyValue() map[string]string {
 }
 
 type CreateReceiptParams struct {
-	TemplatePath string
-	ControlPath  string
-	Filename     string
-	OutputDir    string
-	ReceiptDate  *string // nullable
-	CustomerName string
-	CustomerID   *uint64 // nullable
-	Address      *string // nullable
-	Detail       string
-	DeliveryNO   *string // nullable
-	DeliveryDate *string // nullable
-	Amount       float64
+	TemplatePath       string
+	ControlPath        string
+	Filename           string
+	OutputDir          string
+	ReceiptDate        *string // nullable
+	OverwriteReceiptNO *int    // nullable
+	CustomerName       string
+	CustomerID         *uint64 // nullable
+	Address            *string // nullable
+	Detail             string
+	DeliveryNO         *string // nullable
+	DeliveryDate       *string // nullable
+	Amount             float64
 }
 
 func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err error) {
@@ -167,15 +172,31 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err 
 		return outputPath, logger.NewErrorAndLog(err, "ParseTime(params.DeliveryDate)")
 	}
 
-	// get control number
-	realReceiptNo, err := a.GetNextControlNumber(params.ControlPath)
-	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "GetNextControlNumber")
+	var realReceiptNO *int
+	var overwriteRowCoordinate *int
+	if params.OverwriteReceiptNO != nil {
+		// find original data using this NO
+		originalData, err := excel.GetControlData(params.ControlPath, *params.OverwriteReceiptNO)
+		if err != nil {
+			return outputPath, logger.NewErrorAndLog(err, "GetControlData(params.ControlPath, *params.OverwriteReceiptNO)")
+		}
+		if originalData != nil {
+			realReceiptNO = &originalData.NO
+			overwriteRowCoordinate = &originalData.RowCoordinate
+		}
+	}
+	if realReceiptNO == nil {
+		// get control number
+		newNO, err := a.GetNextControlNumber(params.ControlPath)
+		if err != nil {
+			return outputPath, logger.NewErrorAndLog(err, "GetNextControlNumber")
+		}
+		realReceiptNO = &newNO
 	}
 
 	// create excel file
 	receiptData := ReceiptData{
-		ReceiptNO:    strconv.Itoa(realReceiptNo),
+		ReceiptNO:    strconv.Itoa(*realReceiptNO),
 		ReceiptDate:  receiptDate,
 		CustomerName: params.CustomerName,
 		Address:      params.Address,
@@ -191,13 +212,18 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err 
 	logger.Log("CreateReceiptFile", params.TemplatePath, receiptData)
 
 	controlData := excel.ControlData{
-		NO:           realReceiptNo,
+		NO:           *realReceiptNO,
 		CustomerName: params.CustomerName,
 		Detail:       params.Detail,
 		Amount:       params.Amount,
 		Date:         receiptDate,
 	}
-	controlFile, err := excel.WriteControlFile(params.ControlPath, controlData)
+
+	controlFile, err := excel.WriteControlFile(excel.WriteControlFileParam{
+		Data:                   controlData,
+		ControlFilePath:        params.ControlPath,
+		OverwriteRowCoordinate: overwriteRowCoordinate,
+	})
 	if err != nil {
 		return outputPath, logger.NewErrorAndLog(err, "WriteReceiptControlFile")
 	}
@@ -316,6 +342,7 @@ const (
 type CreateProcurementParams struct {
 	TemplatePath          string
 	ControlPath           string
+	OverwriteDeliveryNO    *int
 	BookOrderPath         *string // nullable
 	Filename              string
 	OutputDir             string
@@ -364,15 +391,31 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath stri
 		bossName = &emptyName
 	}
 
-	// get control number
-	realDeliveryNo, err := a.GetNextControlNumber(params.ControlPath)
-	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "GetNextControlNumber")
+	var realDeliNO *int
+	var overwriteRowCoordinate *int
+	if params.OverwriteDeliveryNO != nil {
+		// find original data using this NO
+		originalData, err := excel.GetControlData(params.ControlPath, *params.OverwriteDeliveryNO)
+		if err != nil {
+			return outputPath, logger.NewErrorAndLog(err, "GetControlData(params.ControlPath, *params.OverwriteDeliveryNO)")
+		}
+		if originalData != nil {
+			realDeliNO = &originalData.NO
+			overwriteRowCoordinate = &originalData.RowCoordinate
+		}
+	}
+	if realDeliNO == nil {
+		// get control number
+		newNO, err := a.GetNextControlNumber(params.ControlPath)
+		if err != nil {
+			return outputPath, logger.NewErrorAndLog(err, "GetNextControlNumber")
+		}
+		realDeliNO = &newNO
 	}
 
 	// create excel file
 	procurementData := ProcurementData{
-		DeliveryNO:      strconv.Itoa(realDeliveryNo),
+		DeliveryNO:      strconv.Itoa(*realDeliNO),
 		DeliveryDate:    deliveryDate,
 		Buy:             params.Buy,
 		Project:         params.Project,
@@ -419,13 +462,17 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath stri
 	}
 
 	controlData := excel.ControlData{
-		NO:           realDeliveryNo,
+		NO:           *realDeliNO,
 		CustomerName: params.CustomerName,
 		Detail:       params.Buy,
 		Amount:       params.Amount,
 		Date:         deliveryDate,
 	}
-	controlFile, err := excel.WriteControlFile(params.ControlPath, controlData)
+	controlFile, err := excel.WriteControlFile(excel.WriteControlFileParam{
+		Data:                   controlData,
+		ControlFilePath:        params.ControlPath,
+		OverwriteRowCoordinate: overwriteRowCoordinate,
+	})
 	if err != nil {
 		return outputPath, logger.NewErrorAndLog(err, "WriteProcurementControlFile")
 	}

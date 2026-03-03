@@ -163,6 +163,7 @@ type CreateReceiptParams struct {
 func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err error) {
 	// for logging
 	logger := log.NewUnitOfLog(a.repo)
+	logger.Log("CreateReceipt", params)
 	// 	process data
 	var receiptDate, deliveryDate *time.Time
 	if receiptDate, err = utils.ParseTime(params.ReceiptDate); err != nil {
@@ -178,8 +179,9 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err 
 		// find original data using this NO
 		originalData, err := excel.GetControlData(params.ControlPath, *params.OverwriteReceiptNO)
 		if err != nil {
-			return outputPath, logger.NewErrorAndLog(err, "GetControlData(params.ControlPath, *params.OverwriteReceiptNO)")
+			return outputPath, logger.NewErrorAndLog(err, "GetControlData")
 		}
+		logger.Log("GetControlData", params.ControlPath, *params.OverwriteReceiptNO, originalData)
 		if originalData != nil {
 			realReceiptNO = &originalData.NO
 			overwriteRowCoordinate = &originalData.RowCoordinate
@@ -191,6 +193,7 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err 
 		if err != nil {
 			return outputPath, logger.NewErrorAndLog(err, "GetNextControlNumber")
 		}
+		logger.Log("GetNextControlNumber", params.ControlPath, newNO)
 		realReceiptNO = &newNO
 	}
 
@@ -207,7 +210,7 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err 
 	}
 	excelFile, err := excel.CreateExcelFile(params.TemplatePath, receiptData.toExcelKeyValue())
 	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "CreateReceiptFile")
+		return outputPath, logger.NewErrorAndLog(err, "CreateExcelFile")
 	}
 	logger.Log("CreateReceiptFile", params.TemplatePath, receiptData)
 
@@ -225,22 +228,22 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err 
 		OverwriteRowCoordinate: overwriteRowCoordinate,
 	})
 	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "WriteReceiptControlFile")
+		return outputPath, logger.NewErrorAndLog(err, "WriteControlFile")
 	}
-	logger.Log("WriteReceiptControlFile", params.ControlPath, controlData)
+	logger.Log("WriteControlFile", params.ControlPath, controlData)
 
 	// save
 	outputPath, err = excel.SaveAsExcelFile(excelFile, params.OutputDir, params.Filename)
 	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "SaveOuputReceiptFile")
+		return outputPath, logger.NewErrorAndLog(err, "SaveAsExcelFile")
 	}
-	logger.Log("SaveOuputReceiptFile", outputPath)
+	logger.Log("SaveAsExcelFile", outputPath)
 
 	_, err = excel.SaveExcelFile(controlFile)
 	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "SaveReceiptControlFile")
+		return outputPath, logger.NewErrorAndLog(err, "SaveControlFile")
 	}
-	logger.Log("SaveReceiptControlFile", controlFile.Path)
+	logger.Log("SaveControlFile", controlFile.Path)
 
 	// insert to database if the customer does not exist
 	if params.CustomerID == nil {
@@ -255,7 +258,7 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err 
 	// open file
 	err = a.CMDOpenFile(outputPath)
 	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "CMDOpenReceiptFile")
+		return outputPath, logger.NewErrorAndLog(err, "CMDOpenFile")
 	}
 	return outputPath, nil
 }
@@ -365,6 +368,7 @@ type CreateProcurementParams struct {
 func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath string, err error) {
 	// for logging
 	logger := log.NewUnitOfLog(a.repo)
+	logger.Log("CreateProcurement", params)
 	// 	process data
 	var deliveryDate *time.Time
 	if deliveryDate, err = utils.ParseTime(params.DeliveryDate); err != nil {
@@ -397,8 +401,9 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath stri
 		// find original data using this NO
 		originalData, err := excel.GetControlData(params.ControlPath, *params.OverwriteDeliveryNO)
 		if err != nil {
-			return outputPath, logger.NewErrorAndLog(err, "GetControlData(params.ControlPath, *params.OverwriteDeliveryNO)")
+			return outputPath, logger.NewErrorAndLog(err, "GetControlData")
 		}
+		logger.Log("GetControlData", params.ControlPath, *params.OverwriteDeliveryNO, originalData)
 		if originalData != nil {
 			realDeliNO = &originalData.NO
 			overwriteRowCoordinate = &originalData.RowCoordinate
@@ -410,6 +415,7 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath stri
 		if err != nil {
 			return outputPath, logger.NewErrorAndLog(err, "GetNextControlNumber")
 		}
+		logger.Log("GetNextControlNumber", params.ControlPath, newNO)
 		realDeliNO = &newNO
 	}
 
@@ -431,9 +437,9 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath stri
 	}
 	excelFile, err := excel.CreateExcelFile(params.TemplatePath, procurementData.toExcelKeyValue())
 	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "CreateProcurementFile")
+		return outputPath, logger.NewErrorAndLog(err, "CreateExcelFile")
 	}
-	logger.Log("CreateProcurementFile", params.TemplatePath, procurementData)
+	logger.Log("CreateExcelFile", params.TemplatePath, procurementData)
 
 	// book order
 	if params.BookOrderPath != nil {
@@ -441,6 +447,7 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath stri
 		if err != nil {
 			return outputPath, logger.NewErrorAndLog(err, "GetBookOrderDataFromFile")
 		}
+		logger.Log("GetBookOrderDataFromFile", *params.BookOrderPath, bookOrder)
 		excelFile, err = excel.WriteBookOrder(excelFile, "data", bookOrder)
 		if err != nil {
 			return outputPath, logger.NewErrorAndLog(err, "WriteBookOrder")
@@ -474,22 +481,22 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath stri
 		OverwriteRowCoordinate: overwriteRowCoordinate,
 	})
 	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "WriteProcurementControlFile")
+		return outputPath, logger.NewErrorAndLog(err, "WriteControlFile")
 	}
-	logger.Log("WriteProcurementControlFile", params.ControlPath, controlData)
+	logger.Log("WriteControlFile", params.ControlPath, controlData)
 
 	// save
 	outputPath, err = excel.SaveAsExcelFile(excelFile, params.OutputDir, params.Filename)
 	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "SaveOuputProcurementFile")
+		return outputPath, logger.NewErrorAndLog(err, "SaveAsExcelFile")
 	}
-	logger.Log("SaveOuputProcurementFile", outputPath)
+	logger.Log("SaveAsExcelFile", outputPath)
 
 	_, err = excel.SaveExcelFile(controlFile)
 	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "SaveProcurementControlFile")
+		return outputPath, logger.NewErrorAndLog(err, "SaveControlFile")
 	}
-	logger.Log("SaveProcurementControlFile", controlFile.Path)
+	logger.Log("SaveControlFile", controlFile.Path)
 
 	// upsert
 	customer := model.Customer{
@@ -513,14 +520,14 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath stri
 		_, err = a.repo.UpdateCustomerByID(&customer)
 		if err == nil {
 			// not throwing any error!
-			logger.Log("CreateCustomer", customer)
+			logger.Log("UpdateCustomerByID", customer)
 		}
 	}
 
 	// open file
 	err = a.CMDOpenFile(outputPath)
 	if err != nil {
-		return outputPath, logger.NewErrorAndLog(err, "CMDOpenProcurementFile")
+		return outputPath, logger.NewErrorAndLog(err, "CMDOpenFile")
 	}
 	return outputPath, nil
 }
@@ -537,6 +544,7 @@ func (a *App) GetBookOrderFromDataSourceFile(filePath string) (excel.BookOrder, 
 
 func (a *App) AutoMoveBookOrder(procurementFilepath string, bookOrderFilePath string) error {
 	logger := log.NewUnitOfLog(a.repo)
+	logger.Log("AutoMoveBookOrder", procurementFilepath, bookOrderFilePath)
 	f, err := excel.AutoMoveBookOrder(procurementFilepath, bookOrderFilePath)
 	if err != nil {
 		return logger.NewErrorAndLog(err, "AutoMoveBookOrder")
@@ -550,7 +558,7 @@ func (a *App) AutoMoveBookOrder(procurementFilepath string, bookOrderFilePath st
 
 	err = a.CMDOpenFile(procurementFilepath)
 	if err != nil {
-		return logger.NewErrorAndLog(err, "CMDOpenProcurementFile")
+		return logger.NewErrorAndLog(err, "CMDOpenFile")
 	}
 	return nil
 }

@@ -376,24 +376,12 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath stri
 	}
 	var headCheckerName, checker1Name, checker2Name, objectName, headObjectName, bossName *string
 	emptyName := strings.Repeat(" ", 35)
-	if params.HeadCheckerName == nil {
-		headCheckerName = &emptyName
-	}
-	if params.Checker1Name == nil {
-		checker1Name = &emptyName
-	}
-	if params.Checker2Name == nil {
-		checker2Name = &emptyName
-	}
-	if params.ObjectName == nil {
-		objectName = &emptyName
-	}
-	if params.HeadObjectName == nil {
-		headObjectName = &emptyName
-	}
-	if params.BossName == nil {
-		bossName = &emptyName
-	}
+	headCheckerName = utils.IfNilReturnStr(params.HeadCheckerName, emptyName)
+	checker1Name = utils.IfNilReturnStr(params.Checker1Name, emptyName)
+	checker2Name = utils.IfNilReturnStr(params.Checker2Name, emptyName)
+	objectName = utils.IfNilReturnStr(params.ObjectName, emptyName)
+	headObjectName = utils.IfNilReturnStr(params.HeadObjectName, emptyName)
+	bossName = utils.IfNilReturnStr(params.BossName, emptyName)
 
 	var realDeliNO *int
 	var overwriteRowCoordinate *int

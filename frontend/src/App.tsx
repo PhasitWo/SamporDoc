@@ -1,8 +1,7 @@
 import { Routes, Route, Outlet, useNavigate, useLocation } from 'react-router';
-import { EventsOn } from '../wailsjs/runtime';
 import CreateReceipt from './pages/CreateReceipt';
 import Setting from './pages/Setting';
-import { ConfigProvider, Layout, Menu, App } from 'antd';
+import { ConfigProvider, Layout, Menu, App, Button } from 'antd';
 import { useAppStore } from './store/useAppStore';
 import { useEffect } from 'react';
 import th from 'antd/es/date-picker/locale/th_TH';
@@ -15,10 +14,12 @@ import ErrorFallback from './pages/ErrorFallback';
 import { useShowBoundary } from './utils';
 import CreateProcurement from './pages/CreateProcurement';
 import Automove from './pages/Automove';
-import { HomeOutlined } from '@ant-design/icons';
+import { DatabaseOutlined, FileExcelOutlined, HomeOutlined, SettingOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import Home from './pages/Home';
 import { primaryColorMap } from './constants';
 import Success from './pages/Success';
+import DBSetting from './pages/DBSetting';
+import useApp from 'antd/es/app/useApp';
 
 dayjs.locale('th');
 dayjs.extend(buddhistEra);
@@ -47,6 +48,30 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const init = useAppStore((s) => s.init);
   const { showBoundary } = useShowBoundary();
+  const isRevertedToDefaultCustomerDB = useAppStore((s) => s.isRevertedToDefaultCustomerDB);
+  const { notification } = useApp();
+
+  useEffect(() => {
+    if (isRevertedToDefaultCustomerDB) {
+      notification.warning({
+        placement: 'bottomRight',
+        pauseOnHover: true,
+        duration: 10,
+        actions: [
+          <Button
+            onClick={() => {
+              notification.destroy();
+              navigate('/DBSetting');
+            }}
+          >
+            ไปที่ตั้งค่า Database
+          </Button>,
+        ],
+        description:
+          'คุณกำลังใช้ฐานข้อมูลลูกค้าแบบค่าตั้งต้น (DEFAULT) เนื่องจากไม่สามารถเชื่อมต่อกับฐานข้อมูลลูกค้าที่คุณเลือกได้',
+      });
+    }
+  }, [isRevertedToDefaultCustomerDB]);
 
   useEffect(() => {
     init().catch(showBoundary);
@@ -76,10 +101,27 @@ const AppLayout = () => {
             mode="horizontal"
             items={[
               { key: '/', itemIcon: <HomeOutlined /> },
-              { key: '/createReceipt', label: 'สร้างใบเสร็จรับเงิน' },
-              { key: '/createProcurement', label: 'สร้างจัดซื้อจัดจ้าง' },
-              { key: '/automove', label: 'Auto Move' },
-              { key: '/setting', label: 'ตั้งค่า' },
+              {
+                key: '/createReceipt',
+                icon: <FileExcelOutlined style={{ color: primaryColorMap['/createReceipt'] }} />,
+                label: 'สร้างใบเสร็จรับเงิน',
+              },
+              {
+                key: '/createProcurement',
+                icon: <FileExcelOutlined style={{ color: primaryColorMap['/createProcurement'] }} />,
+                label: 'สร้างจัดซื้อจัดจ้าง',
+              },
+              {
+                key: '/automove',
+                icon: <ThunderboltOutlined style={{ color: primaryColorMap['/automove'] }} />,
+                label: 'Auto Move',
+              },
+              { key: '/setting', icon: <SettingOutlined style={{ color: primaryColorMap['/setting'] }} />, label: 'ตั้งค่า' },
+              {
+                key: '/DBSetting',
+                icon: <DatabaseOutlined style={{ color: primaryColorMap['/DBSetting'] }} />,
+                label: 'Database',
+              },
             ]}
             onClick={(info) => navigate(info.key)}
             style={{ flex: 1, minWidth: 0 }}
@@ -99,10 +141,6 @@ function MyApp() {
   const location = useLocation();
   const navigate = useNavigate();
   const init = useAppStore((s) => s.init);
-
-  EventsOn('navigate', (route: string) => {
-    navigate(route);
-  });
 
   return (
     <ConfigProvider
@@ -132,6 +170,7 @@ function MyApp() {
               <Route path="/createProcurement" element={<CreateProcurement />} />
               <Route path="/automove" element={<Automove />} />
               <Route path="/setting" element={<Setting />} />
+              <Route path="/DBSetting" element={<DBSetting />} />
               <Route path="/success" element={<Success />} />
             </Route>
           </Routes>

@@ -103,7 +103,7 @@ export default function CreateProcurementPage() {
             />
             <InputNumber<string | number>
               value={data.deliveryNO}
-              min='1'
+              min="1"
               controls={false}
               onChange={(value) => setData({ ...data, deliveryNO: String(value) })}
               className="w-full"
@@ -133,6 +133,7 @@ export default function CreateProcurementPage() {
             { value: 'หนังสือเรียน' },
             { value: 'อื่นๆ โปรดระบุ', disabled: true },
           ]}
+          value={data.buy}
           onChange={(v) => setData({ ...data, buy: v })}
         />
       </InputContainer>

@@ -38,12 +38,36 @@ export function GetNextControlNumber(arg1) {
   return window['go']['main']['App']['GetNextControlNumber'](arg1);
 }
 
+export function GetSetting() {
+  return window['go']['main']['App']['GetSetting']();
+}
+
+export function GetUseRemoteCustomerDB() {
+  return window['go']['main']['App']['GetUseRemoteCustomerDB']();
+}
+
+export function OpenDBFileDialog() {
+  return window['go']['main']['App']['OpenDBFileDialog']();
+}
+
 export function OpenDirectoryDialog() {
   return window['go']['main']['App']['OpenDirectoryDialog']();
 }
 
 export function OpenExcelFileDialog() {
   return window['go']['main']['App']['OpenExcelFileDialog']();
+}
+
+export function ResetupApp() {
+  return window['go']['main']['App']['ResetupApp']();
+}
+
+export function RevertToDefaultCustomerDB() {
+  return window['go']['main']['App']['RevertToDefaultCustomerDB']();
+}
+
+export function SaveSetting(arg1) {
+  return window['go']['main']['App']['SaveSetting'](arg1);
 }
 
 export function UpdateShopBySlug(arg1) {

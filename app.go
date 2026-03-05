@@ -7,6 +7,7 @@ import (
 	"SamporDoc/backend/infra/repository"
 	"SamporDoc/backend/infra/seed"
 	"SamporDoc/backend/log"
+	"SamporDoc/backend/setting"
 	"SamporDoc/backend/utils"
 	"context"
 	"fmt"
@@ -21,19 +22,118 @@ import (
 )
 
 type App struct {
-	ctx  context.Context
-	repo *repository.Repo
+	ctx                 context.Context
+	setting             *setting.Setting
+	repo                *repository.Repo
+	customerRepo        *repository.CustomerRepo
+	useRemoteCustomerDB bool
 }
 
 func NewApp() *App {
-	return &App{}
+	return &App{useRemoteCustomerDB: false}
 }
 
 // startup is called at application startup
 func (a *App) startup(ctx context.Context) {
 	// use wails' context
 	a.ctx = ctx
-	// connect to the database
+
+	// load setting.json
+	st := setting.New()
+	err := st.LoadSetting()
+	if err != nil {
+		fmt.Println("Error loading setting:", err)
+		panic(err)
+	}
+	a.setting = st
+
+	// connect to the main database
+	err = a.setupMainDB()
+	if err != nil {
+		fmt.Println("Error setting up main database:", err)
+		panic(err)
+	}
+
+	// connect to the customer database
+	// try connecting to remote customer database
+	if st.CustomerDBPath != setting.DEFAULT_CUSTOMER_DB_PATH {
+		if !utils.FileExists(st.CustomerDBPath) {
+			a.RevertToDefaultCustomerDB()
+			return
+		}
+		if err := a.setupRemoteCustomerDB(st.CustomerDBPath); err != nil {
+			a.RevertToDefaultCustomerDB()
+		}
+		return
+	}
+	// try connecting to default customer database
+	if err := a.setupDefaultCustomerDB(); err != nil {
+		fmt.Println("Error setting up default customer database:", err)
+		panic(err)
+	}
+}
+
+func (a *App) RevertToDefaultCustomerDB() {
+	// result, _ := wailsRuntime.MessageDialog(a.ctx, wailsRuntime.MessageDialogOptions{
+	// 	Type:          wailsRuntime.QuestionDialog,
+	// 	Title:         "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลลูกค้า",
+	// 	Message:       "ต้องการกลับไปใช้ฐานข้อมูลลูกค้าแบบค่าตั้งต้น (DEFAULT) หรือไม่?",
+	// 	DefaultButton: "Yes",
+	// 	Buttons:       []string{"Yes"},
+	// })
+	if err := a.setupDefaultCustomerDB(); err != nil {
+		fmt.Println("RevertToDefaultCustomerDB -> Error setting up default customer database:", err)
+		panic(err)
+	}
+
+}
+
+func (a *App) setupRemoteCustomerDB(remoteDBFilePath string) error {
+	a.useRemoteCustomerDB = true
+	return a.setupCustomerDB(remoteDBFilePath)
+}
+
+func (a *App) setupDefaultCustomerDB() error {
+	a.useRemoteCustomerDB = false
+	defaultCustomerDBPath, err := config.GetAppFilePath(config.CustomerDBFileName)
+	if err != nil {
+		fmt.Println(err)
+		panic("Error getting customer database file path")
+	}
+	return a.setupCustomerDB(defaultCustomerDBPath)
+}
+
+func (a *App) setupCustomerDB(customerDBFilePath string) error {
+	customerDB, err := gorm.Open(sqlite.Open(customerDBFilePath), &gorm.Config{})
+	if err != nil {
+		wailsRuntime.MessageDialog(a.ctx, wailsRuntime.MessageDialogOptions{
+			Type:    wailsRuntime.ErrorDialog,
+			Title:   "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลลูกค้า",
+			Message: "ไม่สามารถเชื่อมต่อฐานข้อมูลลูกค้าได้",
+		})
+		return err
+	}
+	// migrate
+	customerDB.AutoMigrate(&model.Customer{})
+
+	// seeding
+	customerRepo := repository.NewCustomerRepo(a.ctx, customerDB)
+	customers, err := customerRepo.GetAllCustomers()
+	if err != nil {
+		fmt.Println("Error seeding database -> repo.GetAllCustomers")
+		panic(err)
+	}
+	if len(customers) == 0 {
+		seed.SeedCustomers(customerRepo)
+	}
+
+	a.customerRepo = customerRepo
+
+	return nil
+}
+
+func (a *App) setupMainDB() error {
+	// connect to the main database
 	dbFilePath, err := config.GetAppFilePath(config.DBFileName)
 	if err != nil {
 		fmt.Println(err)
@@ -44,33 +144,52 @@ func (a *App) startup(ctx context.Context) {
 		panic("Failed to connect database")
 	}
 	// migrate
-	db.AutoMigrate(&model.Customer{}, &model.Shop{}, &model.Log{})
+	db.AutoMigrate(&model.Shop{}, &model.Log{})
 
-	// create repo instance
-	a.repo = repository.NewRepo(ctx, db)
-
-	// seeding
-	customers, err := a.repo.GetAllCustomers()
-	if err != nil {
-		fmt.Println("Error seeding database -> repo.GetAllCustomers")
-		panic(err)
-	}
-	if len(customers) == 0 {
-		seed.SeedCustomers(a.repo)
-	}
-	shops, err := a.repo.GetAllShops()
+	mainRepo := repository.NewRepo(a.ctx, db)
+	shops, err := mainRepo.GetAllShops()
 	if err != nil {
 		fmt.Println("Error seeding database -> repo.GetAllShops")
 		panic(err)
 	}
 	if len(shops) == 0 {
-		seed.SeedShops(a.repo)
+		seed.SeedShops(mainRepo)
 	} else {
-		seed.SeedUpdateShops(a.repo)
+		seed.SeedUpdateShops(mainRepo)
 	}
+
+	a.repo = mainRepo
+
+	return nil
 }
 
 // Binding
+func (a *App) ResetupApp() {
+	a.startup(a.ctx)
+}
+
+func (a *App) GetUseRemoteCustomerDB() bool {
+	return a.useRemoteCustomerDB
+}
+
+func (a *App) GetSetting() (st *setting.Setting, err error) {
+	st = setting.New()
+	err = st.LoadSetting()
+	if err != nil {
+		return nil, fmt.Errorf("Error loading setting: %w", err)
+	}
+	return st, nil
+}
+
+func (a *App) SaveSetting(st setting.Setting) error {
+	err := st.SaveSetting()
+	if err != nil {
+		return fmt.Errorf("Error saving setting: %w", err)
+	}
+	a.setting = &st
+	return nil
+}
+
 func (a *App) GetAllShops() ([]model.Shop, error) {
 	return a.repo.GetAllShops()
 }
@@ -80,7 +199,7 @@ func (a *App) UpdateShopBySlug(shop model.Shop) (model.Shop, error) {
 }
 
 func (a *App) GetAllCustomers() ([]model.Customer, error) {
-	return a.repo.GetAllCustomers()
+	return a.customerRepo.GetAllCustomers()
 }
 
 func (a *App) GetNextControlNumber(controlFilePath string) (int, error) {
@@ -100,6 +219,15 @@ func (a *App) OpenExcelFileDialog() (string, error) {
 		Filters: []wailsRuntime.FileFilter{{
 			DisplayName: "Excel",
 			Pattern:     "*.xlsx",
+		}},
+	})
+}
+
+func (a *App) OpenDBFileDialog() (string, error) {
+	return wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Filters: []wailsRuntime.FileFilter{{
+			DisplayName: "Database",
+			Pattern:     "*.db",
 		}},
 	})
 }
@@ -248,7 +376,7 @@ func (a *App) CreateReceipt(params CreateReceiptParams) (outputPath string, err 
 	// insert to database if the customer does not exist
 	if params.CustomerID == nil {
 		newCustomer := model.Customer{Name: params.CustomerName, Address: params.Address}
-		err = a.repo.CreateCustomer(&newCustomer)
+		err = a.customerRepo.CreateCustomer(&newCustomer)
 		if err == nil {
 			// not throwing any error!
 			logger.Log("CreateCustomer", newCustomer)
@@ -345,7 +473,7 @@ const (
 type CreateProcurementParams struct {
 	TemplatePath          string
 	ControlPath           string
-	OverwriteDeliveryNO    *int
+	OverwriteDeliveryNO   *int
 	BookOrderPath         *string // nullable
 	Filename              string
 	OutputDir             string
@@ -498,14 +626,14 @@ func (a *App) CreateProcurement(params CreateProcurementParams) (outputPath stri
 		BossName:        params.BossName,
 	}
 	if params.CustomerID == nil {
-		err = a.repo.CreateCustomer(&customer)
+		err = a.customerRepo.CreateCustomer(&customer)
 		if err == nil {
 			// not throwing any error!
 			logger.Log("CreateCustomer", customer)
 		}
 	} else {
 		customer.ID = *params.CustomerID
-		_, err = a.repo.UpdateCustomerByID(&customer)
+		_, err = a.customerRepo.UpdateCustomerByID(&customer)
 		if err == nil {
 			// not throwing any error!
 			logger.Log("UpdateCustomerByID", customer)

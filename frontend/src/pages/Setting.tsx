@@ -5,7 +5,7 @@ import InputContainer from '../components/InputContainer';
 import { useAppStore } from '../store/useAppStore';
 import { DefaultOptionType } from 'antd/es/select';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { isDeepEqual } from '../utils';
+import { isDeepEqual, useShowBoundary } from '../utils';
 import { useSearchParams } from 'react-router';
 
 interface ShopOptionType extends DefaultOptionType {
@@ -64,6 +64,7 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
   const shopRef = useRef<model.Shop>();
   const [isDirty, setIsDirty] = useState(false);
   const { message } = App.useApp();
+  const { showBoundary } = useShowBoundary();
 
   useEffect(() => {
     setShop(data);
@@ -75,13 +76,17 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
   }, [shop, shopRef]);
 
   const handleSave = async () => {
-    message.loading('บันทึกการตั้งค่า...');
-    const result = await UpdateShopBySlug(shop);
-    setShop(result);
-    shopRef.current = result;
-    message.destroy();
-    message.success('บันทึกสำเร็จ', 3);
-    useAppStore.getState().fetchShops();
+    try {
+      message.loading('บันทึกการตั้งค่า...');
+      const result = await UpdateShopBySlug(shop);
+      setShop(result);
+      shopRef.current = result;
+      message.destroy();
+      message.success('บันทึกสำเร็จ', 3);
+      useAppStore.getState().fetchShops();
+    } catch (error) {
+      showBoundary(error);
+    }
   };
 
   return (
@@ -107,7 +112,9 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
         </div>
       </InputContainer>
       <InputContainer>
-        <label>ไฟล์สมุดคุมใบเสร็จรับเงิน <span className="font-extrabold">(เล่มหลัก)</span></label>
+        <label>
+          ไฟล์สมุดคุมใบเสร็จรับเงิน <span className="font-extrabold">(เล่มหลัก)</span>
+        </label>
         <div className="flex gap-1">
           <Input readOnly value={shop.receiptMainControlPath ?? ''} />
           <Button
@@ -124,7 +131,7 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
           </Button>
         </div>
       </InputContainer>
-       <InputContainer>
+      <InputContainer>
         <label>
           ไฟล์ต้นแบบใบเสร็จรับเงิน <span className="font-extrabold">(เล่มรอง)</span>
         </label>
@@ -144,7 +151,9 @@ function SingleShopSetting({ data }: { data: model.Shop }) {
         </div>
       </InputContainer>
       <InputContainer>
-        <label>ไฟล์สมุดคุมใบเสร็จรับเงิน <span className="font-extrabold">(เล่มรอง)</span></label>
+        <label>
+          ไฟล์สมุดคุมใบเสร็จรับเงิน <span className="font-extrabold">(เล่มรอง)</span>
+        </label>
         <div className="flex gap-1">
           <Input readOnly value={shop.receiptSecControlPath ?? ''} />
           <Button

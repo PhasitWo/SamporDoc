@@ -37,7 +37,7 @@ func SeedUpdateShops(repo *repository.Repo) {
 	fmt.Println("Finish updating shops")
 }
 
-func SeedCustomers(repo *repository.Repo) {
+func SeedCustomers(repo *repository.CustomerRepo) {
 	reader := csv.NewReader(strings.NewReader(string(customersSeed)))
 	var customers []model.Customer
 	for {

@@ -173,6 +173,7 @@ export default function CreateReceiptPage() {
             { value: 'ค่าหนังสือเรียน' },
             { value: 'อื่นๆ โปรดระบุ', disabled: true },
           ]}
+          value={data.detail}
           onChange={(v) => setData({ ...data, detail: v })}
         />
       </InputContainer>
@@ -180,7 +181,7 @@ export default function CreateReceiptPage() {
       <div className="flex flex-row w-full gap-2">
         <InputContainer>
           <label>อ้างใบส่งของเลขที่</label>
-          <Input onChange={(e) => setData({ ...data, deliveryNO: e.target.value })} />
+          <Input value={data.deliveryNO} onChange={(e) => setData({ ...data, deliveryNO: e.target.value })} />
         </InputContainer>
         <InputContainer>
           <label>ใบส่งของลงวันที่</label>

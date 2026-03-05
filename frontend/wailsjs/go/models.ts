@@ -250,3 +250,20 @@ export namespace model {
 
 }
 
+export namespace setting {
+	
+	export class Setting {
+	    CustomerDBPath: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Setting(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.CustomerDBPath = source["CustomerDBPath"];
+	    }
+	}
+
+}
+

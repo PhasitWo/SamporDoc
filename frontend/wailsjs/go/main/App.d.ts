@@ -3,6 +3,7 @@
 import {main} from '../models';
 import {model} from '../models';
 import {excel} from '../models';
+import {setting} from '../models';
 
 export function AutoMoveBookOrder(arg1:string,arg2:string):Promise<void>;
 
@@ -22,8 +23,20 @@ export function GetControlData(arg1:string,arg2:number):Promise<excel.ControlDat
 
 export function GetNextControlNumber(arg1:string):Promise<number>;
 
+export function GetSetting():Promise<setting.Setting>;
+
+export function GetUseRemoteCustomerDB():Promise<boolean>;
+
+export function OpenDBFileDialog():Promise<string>;
+
 export function OpenDirectoryDialog():Promise<string>;
 
 export function OpenExcelFileDialog():Promise<string>;
+
+export function ResetupApp():Promise<void>;
+
+export function RevertToDefaultCustomerDB():Promise<void>;
+
+export function SaveSetting(arg1:setting.Setting):Promise<void>;
 
 export function UpdateShopBySlug(arg1:model.Shop):Promise<model.Shop>;

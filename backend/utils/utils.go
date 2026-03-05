@@ -130,3 +130,15 @@ func SplitPath(fullPath string) (directory string, filename string) {
 	filename = filepath.Base(fullPath)
 	return directory, filename
 }
+
+func IfNilReturnStr(value *string, fallback string) *string {
+	if value == nil {
+		return &fallback
+	}
+	return value
+}
+
+func FileExists(filePath string) bool {
+	_, err := os.Stat(filePath)
+	return !os.IsNotExist(err)
+}

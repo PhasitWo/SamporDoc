@@ -1,7 +1,7 @@
-import { Button, App, Divider } from 'antd';
+import { App, Divider } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { model } from '../../wailsjs/go/models';
-import { GetNextControlNumber, OpenDirectoryDialog, CreateReceipt, CMDOpenFile, GetControlData } from '../../wailsjs/go/main/App';
+import { GetNextControlNumber, OpenDirectoryDialog, CreateReceipt, GetControlData } from '../../wailsjs/go/main/App';
 import type { DefaultOptionType } from 'antd/es/select';
 import { Dayjs } from 'dayjs';
 import { useNavigate } from 'react-router';

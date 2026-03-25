@@ -106,11 +106,11 @@ func (a *App) setupDefaultCustomerDB() error {
 func (a *App) setupCustomerDB(customerDBFilePath string) error {
 	customerDB, err := gorm.Open(sqlite.Open(customerDBFilePath), &gorm.Config{})
 	if err != nil {
-		wailsRuntime.MessageDialog(a.ctx, wailsRuntime.MessageDialogOptions{
-			Type:    wailsRuntime.ErrorDialog,
-			Title:   "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลลูกค้า",
-			Message: "ไม่สามารถเชื่อมต่อฐานข้อมูลลูกค้าได้",
-		})
+		// wailsRuntime.MessageDialog(a.ctx, wailsRuntime.MessageDialogOptions{
+		// 	Type:    wailsRuntime.ErrorDialog,
+		// 	Title:   "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลลูกค้า",
+		// 	Message: "ไม่สามารถเชื่อมต่อฐานข้อมูลลูกค้าได้",
+		// })
 		return err
 	}
 	// migrate

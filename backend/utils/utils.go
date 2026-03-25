@@ -42,11 +42,13 @@ func IsFloat(value string) bool {
 
 // ex. 1 ธันวาคม 2568
 func GetFullThaiDate(t time.Time) string {
+	t = t.In(time.FixedZone("UTC+7", 7*60*60))
 	return fmt.Sprintf("%v %v %v", int(t.Day()), FullThaiMonthMap[int(t.Month())], t.Year()+543)
 }
 
 // ex. 1 ธ.ค. 68
 func GetShortThaiDate(t time.Time) string {
+	t = t.In(time.FixedZone("UTC+7", 7*60*60))
 	return fmt.Sprintf("%v %v %v", int(t.Day()), ShortThaiMonthMap[int(t.Month())], (t.Year()+543)%100)
 }
 
@@ -80,14 +82,11 @@ var ShortThaiMonthMap map[int]string = map[int]string{
 	12: "ธ.ค.",
 }
 
-func ParseTime(data any) (parsedTime *time.Time, err error) {
-	if data != nil {
-		strDate, ok := data.(string)
-		if ok && strDate != "" {
-			t, err := time.Parse(time.RFC3339, strDate)
-			if err == nil {
-				parsedTime = &t
-			}
+func ParseTime(data *string) (parsedTime *time.Time, err error) {
+	if data != nil && *data != "" {
+		t, err := time.Parse(time.RFC3339, *data)
+		if err == nil {
+			parsedTime = &t
 		}
 	}
 	return parsedTime, err

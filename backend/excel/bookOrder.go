@@ -142,7 +142,11 @@ func getSortLevel(name string) int {
 
 func SortBookItemArray(items *[]BookItem) {
 	slices.SortFunc(*items, func(a, b BookItem) int {
-		return getSortLevel(a.Name) - getSortLevel(b.Name)
+		levelDiff := getSortLevel(a.Name) - getSortLevel(b.Name)
+		if levelDiff == 0 {
+			return strings.Compare(a.Name, b.Name)
+		}
+		return levelDiff
 	})
 }
 
